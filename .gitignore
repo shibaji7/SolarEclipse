@@ -5,6 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
+dataset/*
+
+py_bkp
 
 # Distribution / packaging
 .Python
