@@ -11,19 +11,19 @@ __maintainer__ = "Chakraborty, S."
 __email__ = "shibaji7@vt.edu"
 __status__ = "Research"
 
-import sys
-
-sys.path.extend(["py/"])
-
 import copy
 import datetime as dt
+import sys
 
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
 import scipy.io as io
-import utils
 from loguru import logger
+
+import utils
+
+sys.path.extend(["py/"])
 
 pconst = {
     "boltz": 1.38066e-23,  # Boltzmann constant  in Jule K^-1
@@ -124,6 +124,7 @@ class FetchISR(object):
             lines = f.readlines()
         isr = []
         hdrs = list(filter(None, lines[0].replace("\n", "").split(" ")))
+        print(hdrs)
         hdrs_idx = [hdrs.index(h) for h in self.headers]
         for j, l in enumerate(lines[1:]):
             l = list(filter(None, l.replace("\n", "").split(" ")))
@@ -131,7 +132,7 @@ class FetchISR(object):
                 int(l[0]), int(l[1]), int(l[2]), int(l[3]), int(l[4]), int(l[5])
             )
             o = {"DATE": date}
-            for idx, k in zip(hdrs_idx, rtained_hdrs):
+            for idx, k in zip(hdrs_idx, self.headers):
                 o[k] = float(l[idx])
             isr.append(o)
         isr = pd.DataFrame.from_records(isr)
@@ -164,6 +165,39 @@ class FetchISR(object):
             o = self.data[(self.data.GDALT >= h - 10) & (self.data.GDALT <= h + 10)]
             TS[h] = o
         return TS
+
+
+class FetchOccult(object):
+    """
+    Fetch Occultation data
+    """
+
+    def __init__(self, dates, h=150, stn="lusk"):
+        locations = {
+            "lusk": {"lat": 42.7625, "lon": -104.4522},
+            "boulder": {"lat": 40.015, "lon": -105.2705},
+            "mil": {"lat": 42.61, "lon": -71.49},
+        }
+        self.folder = "dataset/Mark/euv/%s_%dkm_171_1.nc"
+        self.dates = [dates[0] + dt.timedelta(minutes=5 * i) for i in range(dates[1])]
+        self.files = [self.folder % (d.strftime("%Y%m%d%H%M%S"), h) for d in self.dates]
+        self.loc = locations[stn]
+        self.data = self.fetch()
+        return
+
+    def fetch(self):
+        ofs = []
+        for f in self.files:
+            ds = nc.Dataset(f)
+            ilat, ilon = (
+                np.argmin(abs(ds.variables["glat"][:] - self.loc["lat"])),
+                np.argmin(abs(ds.variables["glon"][:] - self.loc["lon"])),
+            )
+            of = ds.variables["of"][:][ilat, ilon]
+            ofs.append(of)
+        o = pd.DataFrame()
+        o["time"], o["of"] = self.dates, ofs
+        return o
 
 
 class FetchModel(object):
@@ -275,10 +309,7 @@ class FetchModel(object):
         locations = {
             "lusk": {"lat": 42.7625, "lon": -104.4522},
             "boulder": {"lat": 40.015, "lon": -105.2705},
-            "mit": {
-                "lat": 42.61,
-                "lon": -71.49,
-            },
+            "mil": {"lat": 42.61, "lon": -71.49},
         }
         return locations[stn]
 
@@ -373,6 +404,8 @@ class DiffWACCMX(object):
         loc=None,
         t_start=None,
         t_end=None,
+        h_interpolate="fitted",
+        Hs=[150, 200, 240, 300],
     ):
         """
         Parameters:
@@ -385,6 +418,8 @@ class DiffWACCMX(object):
         loc: Lat-lon dictionary
         t_strat: Start time
         t_end: End time
+        h_interpolate: Kind of height interpolation [nearest, fitted]
+        Hs: Heights in km, only required for 'nearest'
         -----------
         Eaxmple:
         params = [
@@ -405,6 +440,8 @@ class DiffWACCMX(object):
         self.loc = loc
         self.t_start = t_start
         self.t_end = t_end
+        self.h_interpolate = h_interpolate
+        self.Hs = Hs
         self.eclipse = FetchModel(eclipse_file, copy.copy(params), event)
         self.bgc = FetchModel(bgc_file, copy.copy(params), event)
         self.run_extractions()
@@ -414,10 +451,15 @@ class DiffWACCMX(object):
         """
         Run data extraction
         """
-        self.eclipse.run_height_interpolate(
-            self.stn, self.loc, self.t_start, self.t_end
-        )
-        self.bgc.run_height_interpolate(self.stn, self.loc, self.t_start, self.t_end)
+        if self.h_interpolate == "nearest":
+            pass
+        elif self.h_interpolate == "fitted":
+            self.eclipse.run_height_interpolate(
+                self.stn, self.loc, self.t_start, self.t_end
+            )
+            self.bgc.run_height_interpolate(
+                self.stn, self.loc, self.t_start, self.t_end
+            )
         return
 
     def fetch_data(self, kind="TS", hs=[150, 240]):
@@ -445,6 +487,78 @@ class DiffWACCMX(object):
                     o["dif"] = o["ecl"] - o["bgc"]
                     dct[name + "_" + str(h)] = o
         return dct
+
+    def diffential_difference_data(self, kind="TS", hs=[150, 240]):
+        """
+        Get data in TS/Altitude profiles
+        Parameters:
+        -----------
+        kind: TS/A
+        """
+        dct = {}
+        if kind == "TS":
+            dct = self.fetch_data(kind, hs)
+            for k in dct.keys():
+                dct[k]["d_dif"] = np.diff(
+                    dct[k]["dif"], prepend=dct[k]["dif"].tolist()[0]
+                )
+        return dct
+
+    def diffential_difference_2D(self):
+        """
+        2D differential data
+        """
+        dct = {}
+        mCalc = False
+        for i, p in enumerate(self.params):
+            ecl = self.eclipse.dataset[i]["interpol_value"]
+            bgc = self.bgc.dataset[i]["interpol_value"]
+            time = ecl["time"]
+            Hs = self.eclipse.intp_height
+            dct["Hs"], dct["time"] = Hs, time
+            dct[p["name"] + ".d_dif"] = np.diff((ecl["value"] - bgc["value"]), axis=0)
+            if "Op_CHM" in p["name"]:
+                mCalc = True
+        if mCalc:
+            dct["Op_CHM.d_dif"] = dct["Op_CHMP.d_dif"] - dct["Op_CHML.d_dif"]
+        return dct
+
+
+def summary_plots(
+    params,
+    stn,
+    Hs=[150, 175, 200, 225, 240, 300],
+    vlines=[
+        dt.datetime(2017, 8, 21, 16, 30),
+        dt.datetime(2017, 8, 21, 17, 45),
+        dt.datetime(2017, 8, 21, 19),
+    ],
+    types=["1D-TS", "1D-TSpl", "2D-TS", "1D-TSd"],
+):
+    """ """
+    dw = DiffWACCMX(
+        "dataset/29jan2022/ECL_1100_0100_all.nc",
+        "dataset/29jan2022/BGC_1100_0100_all.nc",
+        params=params,
+        stn=stn,
+    )
+    sp = utils.SummaryPlots(dw)
+    for ty in types:
+        if ty == "1D-TS":
+            _ = sp.compute_1D_TS(Hs, vlines=vlines, stn=stn)
+        if ty == "1D-TSpl":
+            _ = sp.compute_1D_pl_TS(Hs, vlines=vlines, stn=stn)
+        if ty == "2D-TS":
+            _ = sp.compute_2D_TS(params, vlines=vlines, stn=stn)
+        if ty == "2D-TS-F1":
+            _ = sp.compute_2D_TS_F1(params, vlines=vlines, stn=stn)
+        if ty == "2D-TS-Tne":
+            _ = sp.compute_2D_TS_Tne(params, vlines=vlines, stn=stn)
+        if ty == "1D-TSd":
+            _ = sp.compute_1D_d_TS(Hs, vlines=vlines, stn=stn)
+        if ty == "1D-del":
+            _ = sp.compute_1D_del(vlines=vlines)
+    return
 
 
 if __name__ == "__main__":

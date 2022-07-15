@@ -7,7 +7,7 @@ __pycache__/
 *.so
 dataset/*
 
-py_bkp
+tmp*
 
 # Distribution / packaging
 .Python
