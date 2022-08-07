@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import array
 from scipy.interpolate import interp1d
+import pickle
 
 plt.style.use(["science", "ieee"])
 
@@ -82,9 +83,9 @@ class SummaryPlots(object):
 
     def compute_1D_TS(
         self,
-        Hs=[120, 150, 240, 300],
+        Hs=[150, 240],
         date_lim=[dt.datetime(2017, 8, 21, 14), dt.datetime(2017, 8, 22)],
-        lab=["(a)", "(b)", "(c)", "(d)", "(e)", "(f)"],
+        lab=["(a)", "(b)"],
         vlines=[
             dt.datetime(2017, 8, 21, 16),
             dt.datetime(2017, 8, 21, 17, 45),
@@ -97,7 +98,7 @@ class SummaryPlots(object):
         Plot 1D TS
         """
         dct = self.dwx.diffential_difference_data(kind="TS", hs=Hs)
-        fig = plt.figure(dpi=300, figsize=(6, 4))
+        fig = plt.figure(dpi=300, figsize=(6, 2))
         for i, h in enumerate(Hs):
             oChmP, oChmL = dct["Op_CHMP_" + str(h)], dct["Op_CHML_" + str(h)]
             oWind, oAmb, oField = (
@@ -105,12 +106,21 @@ class SummaryPlots(object):
                 dct["amb_diff_" + str(h)],
                 dct["dfield_" + str(h)],
             )
-            ax = fig.add_subplot(221 + i)
+            oElec = dct["e_" + str(h)]
+            ax = fig.add_subplot(121 + i)
             ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
             ax.set_xlabel("UT")
             ax.set_xlim(date_lim)
             ax.set_ylabel(
                 r"$\delta [\frac{\partial O^+}{\partial t}]$, $cm^{-3}s^{-1}$"
+            )
+            ax.plot(
+                oElec.time,
+                oElec[prm],
+                "k",
+                lw=0.5,
+                ls="--",
+                label=r"$\delta(e)$"
             )
             ax.plot(
                 oChmP.time,
@@ -144,7 +154,7 @@ class SummaryPlots(object):
                 ls="-",
                 label=r"$\delta(D_{\vec{E}\times\vec{B}})$",
             )
-            ax.set_ylim(-20, 20)
+            #ax.set_ylim(-20, 20)
             ax.axhline(0, ls="--", lw=0.3, alpha=0.4, color="k")
             ax.text(
                 0.05,
@@ -324,7 +334,7 @@ class SummaryPlots(object):
         self,
         params,
         date_lim=[dt.datetime(2017, 8, 21, 15), dt.datetime(2017, 8, 21, 20)],
-        lab=["(e)", "(f)", "(g)", "(h)"],
+        lab=["(a)", "(b)", "(c)", "(d)", "(e)", "(f)"],
         vlines=[
             dt.datetime(2017, 8, 21, 16),
             dt.datetime(2017, 8, 21, 17, 45),
@@ -335,25 +345,43 @@ class SummaryPlots(object):
         """
         Plot 2D histograms for the parameters.
         """
-        labels = ["p-l", r"D_{wind}", r"D_{\alpha}", r"D_{\vec{E}\times\vec{B}}"]
-        fig = plt.figure(dpi=300, figsize=(6, 4))
+        labels = ["p", "l", "p-l", r"D_{wind}", r"D_{\alpha}", r"D_{\vec{E}\times\vec{B}}"]
+        fig = plt.figure(dpi=300, figsize=(6, 6))
         dct = self.dwx.diffential_difference_2D()
         time, Hs = dct["time"], dct["Hs"]
-        ranges = [20, 5, 5, 5]
+        ranges = [100, 100, 20, 5, 5, 5]
         l0, l1 = time.index(vlines[0] + dt.timedelta(minutes=60)), time.index(
             vlines[-1] - dt.timedelta(minutes=60)
         )
-        for i, p in enumerate(["Op_CHM", "dwind", "amb_diff", "dfield"]):
+        for i, p in enumerate(["Op_CHMP", "Op_CHML", "Op_CHM", "dwind", "amb_diff", "dfield"]):
             Ts = []
             o = dct[p + ".d_dif"]
-            ax = fig.add_subplot(221 + i)
+            with open("dataset/latest_%s.pickle"%p, "wb") as handle:
+                pickle.dump(
+                    {
+                        "time": [tx.strftime("%Y-%m-%d %H:%M") for tx in time[1:]],
+                        "Hs": Hs,
+                        p + ".d_dif": o
+                    }, 
+                    handle, 
+                    protocol=pickle.HIGHEST_PROTOCOL
+                )
+            ax = fig.add_subplot(321 + i)
             ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
             ax.set_xlabel("UT")
             ax.set_xlim(date_lim)
             ax.set_ylabel("Heights, km")
             im = ax.pcolor(
-                time[1:], Hs, o.T, vmax=ranges[i], vmin=-1 * ranges[i], cmap="jet_r"
+                time[1:], Hs, o.T, vmax=ranges[i], vmin=-1 * ranges[i], cmap="jet"
             )
+            if i < 2:
+                Ts = []
+                for h in Hs:
+                    arg = np.argmin(np.abs(o[l0:l1, Hs.tolist().index(h)]))
+                    Ts.append(time[l0 + arg])
+                Tx = smooth(np.array([(x - Ts[0]).total_seconds() for x in Ts]))
+                Tx = [Ts[0] + dt.timedelta(seconds=x) for x in Tx]
+                ax.plot(Tx, Hs, "m-", lw=0.8)
             # if "Op" in p:
             #    for h in Hs:
             #        arg = np.argmin(np.abs(o[l0:l1, Hs.tolist().index(h)]))
@@ -380,7 +408,7 @@ class SummaryPlots(object):
         self,
         params,
         date_lim=[dt.datetime(2017, 8, 21, 15), dt.datetime(2017, 8, 21, 20)],
-        lab=["(a)", "(b)", "(c)", "(d)"],
+        lab=["(a)", "(b)"],
         vlines=[
             dt.datetime(2017, 8, 21, 16),
             dt.datetime(2017, 8, 21, 17, 45),
@@ -391,28 +419,38 @@ class SummaryPlots(object):
         """
         Plot 2D histograms for the parameters.
         """
-        labels = [r"e^-", r"M^+", "p", "l"]
-        fig = plt.figure(dpi=300, figsize=(6, 4))
+        labels = [r"e^-", r"M^+"]
+        fig = plt.figure(dpi=300, figsize=(6, 2))
         dct = self.dwx.diffential_difference_2D()
         time, Hs = dct["time"], dct["Hs"]
         l0, l1 = time.index(vlines[0] + dt.timedelta(minutes=60)), time.index(
             vlines[-1] - dt.timedelta(minutes=60)
         )
-        ranges = [8000, 8000, 100, 100]
+        ranges = [8000, 8000]
         dct["Mp.d_dif"] = dct["NOp.d_dif"] + dct["O2p.d_dif"] + dct["O2p.d_dif"]
-        for i, p in enumerate(["e", "Mp", "Op_CHMP", "Op_CHML"]):
+        for i, p in enumerate(["e", "Mp"]):
             Ts = []
             o = dct[p + ".d_dif"]
+            with open("dataset/latest_%s.pickle"%p, "wb") as handle:
+                pickle.dump(
+                    {
+                        "time": [tx.strftime("%Y-%m-%d %H:%M") for tx in time[1:]],
+                        "Hs": Hs,
+                        p + ".d_dif": o
+                    }, 
+                    handle, 
+                    protocol=pickle.HIGHEST_PROTOCOL
+                )
             for h in Hs:
                 arg = np.argmin(np.abs(o[l0:l1, Hs.tolist().index(h)]))
                 Ts.append(time[l0 + arg])
-            ax = fig.add_subplot(221 + i)
+            ax = fig.add_subplot(121 + i)
             ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
             ax.set_xlabel("UT")
             ax.set_xlim(date_lim)
             ax.set_ylabel("Heights, km")
             im = ax.pcolor(
-                time[1:], Hs, o.T, vmax=ranges[i], vmin=-1 * ranges[i], cmap="jet_r"
+                time[1:], Hs, o.T, vmax=ranges[i], vmin=-1 * ranges[i], cmap="jet"
             )
             Tx = smooth(np.array([(x - Ts[0]).total_seconds() for x in Ts]))
             Tx = [Ts[0] + dt.timedelta(seconds=x) for x in Tx]
@@ -533,3 +571,104 @@ class SummaryPlots(object):
         ax.set_ylim(100, 300)
         fig.subplots_adjust(wspace=0.8, hspace=0.8)
         return
+
+def compute_1D_TS(
+    Hs=[150, 240],
+    date_lim=[dt.datetime(2017, 8, 21, 16), dt.datetime(2017, 8, 21, 20)],
+    lab=["(a)", "(b)"],
+    vlines=[
+        dt.datetime(2017, 8, 21, 16),
+        dt.datetime(2017, 8, 21, 17, 45),
+        dt.datetime(2017, 8, 21, 20),
+    ],
+    stn="",
+    prm="d_dif",
+):
+    """
+    Plot 1D TS
+    """
+    files = [
+        "latest_e.pickle",
+        "latest_Op_CHM.pickle",
+        "latest_dwind.pickle",
+        "latest_dfield.pickle",
+        "latest_amb_diff.pickle",
+    ]
+    params = ["e", "Op_CHM", "dwind", "dfield", "amb_diff"]
+    idat, jdat = [], []
+    for i, f in enumerate(files):
+        with open("dataset/"+f, "rb") as handle:
+            b = pickle.load(handle)
+            time = [dt.datetime.strptime(tx, "%Y-%m-%d %H:%M") for tx in b["time"]]
+            hs = b["Hs"]
+            o = b[params[i]+".d_dif"]
+            idat.append(o[:, hs.tolist().index(150)])
+            jdat.append(o[:, hs.tolist().index(240)])
+    dat = np.array([idat, jdat])
+    fig = plt.figure(dpi=300, figsize=(6, 2))
+    for i, h in enumerate(Hs):
+        ax = fig.add_subplot(121 + i)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
+        ax.xaxis.set_major_locator(mdates.HourLocator())
+        ax.set_xlabel("UT")
+        ax.set_xlim(date_lim)
+        ax.set_ylabel(
+            r"$\delta [e/\frac{\partial O^+}{\partial t}]$, $cm^{-3}/cm^{-3}s^{-1}$"
+        )
+        ax.plot(
+            time,
+            dat[i][0]/1000,
+            "gray",
+            lw=0.5,
+            ls="-",
+            label=r"$\delta(e)\times 10^3$"
+        )
+        ax.plot(
+            time,
+            dat[i][1],
+            "r",
+            lw=0.5,
+            ls="-",
+            label=r"$\delta(p-l)$"
+        )
+        ax.plot(
+            time,
+            dat[i][2],
+            "b",
+            lw=0.5,
+            ls="-",
+            label=r"$\delta(D_{wind})$"
+        )
+        ax.plot(
+            time,
+            dat[i][3],
+            "k",
+            lw=0.5,
+            ls="-",
+            label=r"$\delta(D_{\vec{E}\times\vec{B}})$"
+        )
+        ax.plot(
+            time,
+            dat[i][4],
+            "darkgreen",
+            lw=0.5,
+            ls="-",
+            label=r"$\delta(D_{\alpha})$"
+        )
+        ax.axhline(0, ls="--", lw=0.3, alpha=0.4, color="k")
+        ax.text(
+            0.05,
+            1.05,
+            lab[i] + " h=%d km" % h,
+            ha="left",
+            va="center",
+            transform=ax.transAxes,
+        )
+        ax.set_ylim(-30,30)
+        if i == 0:
+            ax.legend(loc=2, fontsize=6)
+            ax.text(0.05, 0.9, stn, ha="left", va="center", transform=ax.transAxes)
+        for d in vlines:
+            ax.axvline(d, ls="--", lw=0.4, color="k")
+    fig.subplots_adjust(wspace=0.5, hspace=0.5)
+    return fig
