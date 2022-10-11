@@ -349,7 +349,7 @@ class SummaryPlots(object):
         fig = plt.figure(dpi=300, figsize=(6, 6))
         dct = self.dwx.diffential_difference_2D()
         time, Hs = dct["time"], dct["Hs"]
-        ranges = [100, 100, 20, 5, 5, 5]
+        ranges = [80, 80, 20, 5, 5, 5]
         l0, l1 = time.index(vlines[0] + dt.timedelta(minutes=60)), time.index(
             vlines[-1] - dt.timedelta(minutes=60)
         )
@@ -466,10 +466,13 @@ class SummaryPlots(object):
             ax.set_ylim(100, 300)
             for d in vlines:
                 ax.axvline(d, ls="--", lw=0.4, color="k")
-            cax = ax.inset_axes([1.04, 0.1, 0.05, 0.8], transform=ax.transAxes)
-            cb = fig.colorbar(im, ax=ax, cax=cax)
-            cb.set_label(r"$cm^{-3}$")
-        fig.subplots_adjust(wspace=0.8, hspace=0.8)
+            if i==1:
+                cax = ax.inset_axes([1.04, 0.1, 0.05, 0.8], transform=ax.transAxes)
+                cb = fig.colorbar(im, ax=ax, cax=cax)
+                cb.set_label(r"$cm^{-3}$")
+                ax.set_ylabel("")
+                ax.set_yticklabels(["", "", "", "", ""])
+        fig.subplots_adjust(wspace=0.1, hspace=0.6)
         return fig
 
     def compute_2D_TS_Tne(
@@ -569,13 +572,13 @@ class SummaryPlots(object):
             ax.axvline(d, ls="--", lw=0.4, color="k")
         ax.legend(loc=2)
         ax.set_ylim(100, 300)
-        fig.subplots_adjust(wspace=0.8, hspace=0.8)
+        fig.subplots_adjust(wspace=0.5, hspace=0.5)
         return
 
 def compute_1D_TS(
     Hs=[150, 240],
-    date_lim=[dt.datetime(2017, 8, 21, 16), dt.datetime(2017, 8, 21, 20)],
-    lab=["(a)", "(b)"],
+    date_lim=[dt.datetime(2017, 8, 21, 15), dt.datetime(2017, 8, 21, 20)],
+    lab=["(i)", "(j)"],
     vlines=[
         dt.datetime(2017, 8, 21, 16),
         dt.datetime(2017, 8, 21, 17, 45),
@@ -664,11 +667,16 @@ def compute_1D_TS(
             va="center",
             transform=ax.transAxes,
         )
-        ax.set_ylim(-30,30)
-        if i == 0:
-            ax.legend(loc=2, fontsize=6)
+        ax.set_ylim(-20,20)
+        if i==1: 
+            ax.set_ylabel("")
+            ax.set_yticklabels(["", "", "", "", ""])
+        if i == 1:
+            ax.legend(bbox_to_anchor=(1.01, 1.05), fontsize=6)
             ax.text(0.05, 0.9, stn, ha="left", va="center", transform=ax.transAxes)
         for d in vlines:
             ax.axvline(d, ls="--", lw=0.4, color="k")
-    fig.subplots_adjust(wspace=0.5, hspace=0.5)
+    fig.subplots_adjust(wspace=0.1, hspace=0.6)
     return fig
+
+    
