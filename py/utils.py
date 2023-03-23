@@ -12,13 +12,13 @@ __email__ = "shibaji7@vt.edu"
 __status__ = "Research"
 
 import datetime as dt
+import pickle
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import array
 from scipy.interpolate import interp1d
-import pickle
 
 plt.style.use(["science", "ieee"])
 
@@ -114,14 +114,7 @@ class SummaryPlots(object):
             ax.set_ylabel(
                 r"$\delta [\frac{\partial O^+}{\partial t}]$, $cm^{-3}s^{-1}$"
             )
-            ax.plot(
-                oElec.time,
-                oElec[prm],
-                "k",
-                lw=0.5,
-                ls="--",
-                label=r"$\delta(e)$"
-            )
+            ax.plot(oElec.time, oElec[prm], "k", lw=0.5, ls="--", label=r"$\delta(e)$")
             ax.plot(
                 oChmP.time,
                 (oChmP[prm] - oChmL[prm]),
@@ -154,7 +147,7 @@ class SummaryPlots(object):
                 ls="-",
                 label=r"$\delta(D_{\vec{E}\times\vec{B}})$",
             )
-            #ax.set_ylim(-20, 20)
+            # ax.set_ylim(-20, 20)
             ax.axhline(0, ls="--", lw=0.3, alpha=0.4, color="k")
             ax.text(
                 0.05,
@@ -345,7 +338,14 @@ class SummaryPlots(object):
         """
         Plot 2D histograms for the parameters.
         """
-        labels = ["p", "l", "p-l", r"D_{wind}", r"D_{\alpha}", r"D_{\vec{E}\times\vec{B}}"]
+        labels = [
+            "p",
+            "l",
+            "p-l",
+            r"D_{wind}",
+            r"D_{\alpha}",
+            r"D_{\vec{E}\times\vec{B}}",
+        ]
         fig = plt.figure(dpi=300, figsize=(6, 6))
         dct = self.dwx.diffential_difference_2D()
         time, Hs = dct["time"], dct["Hs"]
@@ -353,18 +353,20 @@ class SummaryPlots(object):
         l0, l1 = time.index(vlines[0] + dt.timedelta(minutes=60)), time.index(
             vlines[-1] - dt.timedelta(minutes=60)
         )
-        for i, p in enumerate(["Op_CHMP", "Op_CHML", "Op_CHM", "dwind", "amb_diff", "dfield"]):
+        for i, p in enumerate(
+            ["Op_CHMP", "Op_CHML", "Op_CHM", "dwind", "amb_diff", "dfield"]
+        ):
             Ts = []
             o = dct[p + ".d_dif"]
-            with open("dataset/latest_%s.pickle"%p, "wb") as handle:
+            with open("dataset/latest_%s.pickle" % p, "wb") as handle:
                 pickle.dump(
                     {
                         "time": [tx.strftime("%Y-%m-%d %H:%M") for tx in time[1:]],
                         "Hs": Hs,
-                        p + ".d_dif": o
-                    }, 
-                    handle, 
-                    protocol=pickle.HIGHEST_PROTOCOL
+                        p + ".d_dif": o,
+                    },
+                    handle,
+                    protocol=pickle.HIGHEST_PROTOCOL,
                 )
             ax = fig.add_subplot(321 + i)
             ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
@@ -431,15 +433,15 @@ class SummaryPlots(object):
         for i, p in enumerate(["e", "Mp"]):
             Ts = []
             o = dct[p + ".d_dif"]
-            with open("dataset/latest_%s.pickle"%p, "wb") as handle:
+            with open("dataset/latest_%s.pickle" % p, "wb") as handle:
                 pickle.dump(
                     {
                         "time": [tx.strftime("%Y-%m-%d %H:%M") for tx in time[1:]],
                         "Hs": Hs,
-                        p + ".d_dif": o
-                    }, 
-                    handle, 
-                    protocol=pickle.HIGHEST_PROTOCOL
+                        p + ".d_dif": o,
+                    },
+                    handle,
+                    protocol=pickle.HIGHEST_PROTOCOL,
                 )
             for h in Hs:
                 arg = np.argmin(np.abs(o[l0:l1, Hs.tolist().index(h)]))
@@ -466,7 +468,7 @@ class SummaryPlots(object):
             ax.set_ylim(100, 300)
             for d in vlines:
                 ax.axvline(d, ls="--", lw=0.4, color="k")
-            if i==1:
+            if i == 1:
                 cax = ax.inset_axes([1.04, 0.1, 0.05, 0.8], transform=ax.transAxes)
                 cb = fig.colorbar(im, ax=ax, cax=cax)
                 cb.set_label(r"$cm^{-3}$")
@@ -575,6 +577,7 @@ class SummaryPlots(object):
         fig.subplots_adjust(wspace=0.5, hspace=0.5)
         return
 
+
 def compute_1D_TS(
     Hs=[150, 240],
     date_lim=[dt.datetime(2017, 8, 21, 15), dt.datetime(2017, 8, 21, 20)],
@@ -600,11 +603,11 @@ def compute_1D_TS(
     params = ["e", "Op_CHM", "dwind", "dfield", "amb_diff"]
     idat, jdat = [], []
     for i, f in enumerate(files):
-        with open("dataset/"+f, "rb") as handle:
+        with open("dataset/" + f, "rb") as handle:
             b = pickle.load(handle)
             time = [dt.datetime.strptime(tx, "%Y-%m-%d %H:%M") for tx in b["time"]]
             hs = b["Hs"]
-            o = b[params[i]+".d_dif"]
+            o = b[params[i] + ".d_dif"]
             idat.append(o[:, hs.tolist().index(150)])
             jdat.append(o[:, hs.tolist().index(240)])
     dat = np.array([idat, jdat])
@@ -620,43 +623,24 @@ def compute_1D_TS(
         )
         ax.plot(
             time,
-            dat[i][0]/1000,
+            dat[i][0] / 1000,
             "gray",
             lw=0.5,
             ls="-",
-            label=r"$\delta(e)\times 10^3$"
+            label=r"$\delta(e)\times 10^3$",
         )
-        ax.plot(
-            time,
-            dat[i][1],
-            "r",
-            lw=0.5,
-            ls="-",
-            label=r"$\delta(p-l)$"
-        )
-        ax.plot(
-            time,
-            dat[i][2],
-            "b",
-            lw=0.5,
-            ls="-",
-            label=r"$\delta(D_{wind})$"
-        )
+        ax.plot(time, dat[i][1], "r", lw=0.5, ls="-", label=r"$\delta(p-l)$")
+        ax.plot(time, dat[i][2], "b", lw=0.5, ls="-", label=r"$\delta(D_{wind})$")
         ax.plot(
             time,
             dat[i][3],
             "k",
             lw=0.5,
             ls="-",
-            label=r"$\delta(D_{\vec{E}\times\vec{B}})$"
+            label=r"$\delta(D_{\vec{E}\times\vec{B}})$",
         )
         ax.plot(
-            time,
-            dat[i][4],
-            "darkgreen",
-            lw=0.5,
-            ls="-",
-            label=r"$\delta(D_{\alpha})$"
+            time, dat[i][4], "darkgreen", lw=0.5, ls="-", label=r"$\delta(D_{\alpha})$"
         )
         ax.axhline(0, ls="--", lw=0.3, alpha=0.4, color="k")
         ax.text(
@@ -667,8 +651,8 @@ def compute_1D_TS(
             va="center",
             transform=ax.transAxes,
         )
-        ax.set_ylim(-20,20)
-        if i==1: 
+        ax.set_ylim(-20, 20)
+        if i == 1:
             ax.set_ylabel("")
             ax.set_yticklabels(["", "", "", "", ""])
         if i == 1:
@@ -678,5 +662,3 @@ def compute_1D_TS(
             ax.axvline(d, ls="--", lw=0.4, color="k")
     fig.subplots_adjust(wspace=0.1, hspace=0.6)
     return fig
-
-    

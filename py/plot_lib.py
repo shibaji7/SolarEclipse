@@ -12,15 +12,20 @@ __email__ = "shibaji7@vt.edu"
 __status__ = "Research"
 
 import datetime as dt
+import pickle
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import array
 from scipy.interpolate import interp1d
-import pickle
 
 plt.style.use(["science", "ieee"])
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Tahoma", "DejaVu Sans", "Lucida Grande", "Verdana"]
+import matplotlib as mpl
+
+mpl.rcParams.update({"xtick.labelsize": 12, "ytick.labelsize": 12, "font.size": 12})
 
 
 def smooth(x, window_len=51, window="hanning"):
@@ -69,7 +74,7 @@ def compute_1D_TS(
     axes,
     Hs=[150, 240],
     date_lim=[dt.datetime(2017, 8, 21, 15), dt.datetime(2017, 8, 21, 20)],
-    lab=["(i)", "(j)"],
+    lab=["(a)", "(b)"],
     vlines=[
         dt.datetime(2017, 8, 21, 16, 15),
         dt.datetime(2017, 8, 21, 17, 45),
@@ -91,15 +96,15 @@ def compute_1D_TS(
     params = ["e", "Op_CHM", "dwind", "dfield", "amb_diff"]
     idat, jdat = [], []
     for i, f in enumerate(files):
-        with open("dataset/"+f, "rb") as handle:
+        with open("dataset/" + f, "rb") as handle:
             b = pickle.load(handle)
             time = [dt.datetime.strptime(tx, "%Y-%m-%d %H:%M") for tx in b["time"]]
             hs = b["Hs"]
-            o = b[params[i]+".d_dif"]
+            o = b[params[i] + ".d_dif"]
             idat.append(o[:, hs.tolist().index(150)])
             jdat.append(o[:, hs.tolist().index(240)])
     dat = np.array([idat, jdat])
-    
+
     for i, h in enumerate(Hs):
         ax = axes[i]
         ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
@@ -111,43 +116,24 @@ def compute_1D_TS(
         )
         ax.plot(
             time,
-            dat[i][0]/1000,
+            dat[i][0] / 1000,
             "gray",
             lw=0.5,
             ls="-",
-            label=r"$\delta(e)\times 10^3$"
+            label=r"$\delta(e)\times 10^3$",
         )
-        ax.plot(
-            time,
-            dat[i][1],
-            "r",
-            lw=0.5,
-            ls="-",
-            label=r"$\delta(p-l)$"
-        )
-        ax.plot(
-            time,
-            dat[i][2],
-            "b",
-            lw=0.5,
-            ls="-",
-            label=r"$\delta(D_{wind})$"
-        )
+        ax.plot(time, dat[i][1], "r", lw=0.5, ls="-", label=r"$\delta(p-l)$")
+        ax.plot(time, dat[i][2], "b", lw=0.5, ls="-", label=r"$\delta(D_{wind})$")
         ax.plot(
             time,
             dat[i][3],
             "k",
             lw=0.5,
             ls="-",
-            label=r"$\delta(D_{\vec{E}\times\vec{B}})$"
+            label=r"$\delta(D_{\vec{E}\times\vec{B}})$",
         )
         ax.plot(
-            time,
-            dat[i][4],
-            "darkgreen",
-            lw=0.5,
-            ls="-",
-            label=r"$\delta(D_{\alpha})$"
+            time, dat[i][4], "darkgreen", lw=0.5, ls="-", label=r"$\delta(D_{\alpha})$"
         )
         ax.axhline(0, ls="--", lw=0.3, alpha=0.4, color="k")
         ax.text(
@@ -158,8 +144,8 @@ def compute_1D_TS(
             va="center",
             transform=ax.transAxes,
         )
-        ax.set_ylim(-20,20)
-        if i==1: 
+        ax.set_ylim(-20, 20)
+        if i == 1:
             ax.set_ylabel("")
             ax.set_yticklabels(["", "", "", "", ""])
         if i == 1:
@@ -168,6 +154,7 @@ def compute_1D_TS(
         for d in vlines:
             ax.axvline(d, ls="--", lw=0.4, color="k")
     return
+
 
 def compute_2D_TS_F1(
     axes,
@@ -182,7 +169,7 @@ def compute_2D_TS_F1(
         dt.datetime(2017, 8, 21, 19, 30),
     ],
     stn="",
-    ):
+):
     """
     Plot 2D histograms for the parameters.
     """
@@ -197,15 +184,15 @@ def compute_2D_TS_F1(
     for i, p in enumerate(["e", "Mp"]):
         Ts = []
         o = dct[p + ".d_dif"]
-        with open("dataset/latest_%s.pickle"%p, "wb") as handle:
+        with open("dataset/latest_%s.pickle" % p, "wb") as handle:
             pickle.dump(
                 {
                     "time": [tx.strftime("%Y-%m-%d %H:%M") for tx in time[1:]],
                     "Hs": Hs,
-                    p + ".d_dif": o
-                }, 
-                handle, 
-                protocol=pickle.HIGHEST_PROTOCOL
+                    p + ".d_dif": o,
+                },
+                handle,
+                protocol=pickle.HIGHEST_PROTOCOL,
             )
         for h in Hs:
             arg = np.argmin(np.abs(o[l0:l1, Hs.tolist().index(h)]))
@@ -218,12 +205,14 @@ def compute_2D_TS_F1(
         im = ax.pcolor(
             time[1:], Hs, o.T, vmax=ranges[i], vmin=-1 * ranges[i], cmap="jet"
         )
-        if i==0:
+        if i == 0:
             Tx = smooth(np.array([(x - Ts[0]).total_seconds() for x in Ts]))
             Tx = [Ts[0] + dt.timedelta(seconds=x) for x in Tx]
-            ax.plot(Tx, Hs, "m-", lw=0.8)
+            ax.plot(Tx, Hs, "w-", lw=1.5)
+            ax.plot(Tx, Hs, "r--", lw=0.8)
         else:
-            ax.axvline(vlines[1], color="m", ls="-", lw=0.8)
+            ax.axvline(vlines[1], color="w", ls="-", lw=1.5)
+            ax.axvline(vlines[1], color="m", ls="--", lw=0.8)
         ax.text(
             0.05,
             1.10,
@@ -235,7 +224,7 @@ def compute_2D_TS_F1(
         ax.set_ylim(100, 300)
         for d in vlines:
             ax.axvline(d, ls="--", lw=0.4, color="k")
-        if i==1:
+        if i == 1:
             cax = ax.inset_axes([1.04, 0.1, 0.05, 0.8], transform=ax.transAxes)
             cb = fig.colorbar(im, ax=ax, cax=cax)
             cb.set_label(r"$cm^{-3}$")
@@ -243,42 +232,45 @@ def compute_2D_TS_F1(
             ax.set_yticklabels(["", "", "", "", ""])
     return
 
+
 def compute_2D_TS(
     axes,
     dwx,
     params,
     fig,
     date_lim=[dt.datetime(2017, 8, 21, 15), dt.datetime(2017, 8, 21, 20)],
-    lab=["(c)", "(d)", "(e)", "(f)", "(g)", "(h)"],
+    lab=["(a)", "(b)", "(c)", "(d)", "(e)", "(f)"],
     vlines=[
         dt.datetime(2017, 8, 21, 16, 15),
         dt.datetime(2017, 8, 21, 17, 45),
         dt.datetime(2017, 8, 21, 19, 30),
     ],
     stn="",
-    ):
+):
     """
     Plot 2D histograms for the parameters.
     """
     labels = ["p", "l", "p-l", r"D_{wind}", r"D_{\alpha}", r"D_{\vec{E}\times\vec{B}}"]
     dct = dwx.diffential_difference_2D()
     time, Hs = dct["time"], dct["Hs"]
-    ranges = [100, 100, 20, 5, 5, 5]
+    ranges = [100, 100, 10, 10, 5, 5]
     l0, l1 = time.index(vlines[0] + dt.timedelta(minutes=60)), time.index(
         vlines[-1] - dt.timedelta(minutes=60)
     )
-    for i, p in enumerate(["Op_CHMP", "Op_CHML", "Op_CHM", "dwind", "amb_diff", "dfield"]):
+    for i, p in enumerate(
+        ["Op_CHMP", "Op_CHML", "Op_CHM", "dwind", "amb_diff", "dfield"]
+    ):
         Ts = []
         o = dct[p + ".d_dif"]
-        with open("dataset/latest_%s.pickle"%p, "wb") as handle:
+        with open("dataset/latest_%s.pickle" % p, "wb") as handle:
             pickle.dump(
                 {
                     "time": [tx.strftime("%Y-%m-%d %H:%M") for tx in time[1:]],
                     "Hs": Hs,
-                    p + ".d_dif": o
-                }, 
-                handle, 
-                protocol=pickle.HIGHEST_PROTOCOL
+                    p + ".d_dif": o,
+                },
+                handle,
+                protocol=pickle.HIGHEST_PROTOCOL,
             )
         ax = axes[i]
         ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
@@ -295,7 +287,8 @@ def compute_2D_TS(
                 Ts.append(time[l0 + arg])
             Tx = smooth(np.array([(x - Ts[0]).total_seconds() for x in Ts]))
             Tx = [Ts[0] + dt.timedelta(seconds=x) for x in Tx]
-            ax.plot(Tx, Hs, "m-", lw=0.8)
+            ax.plot(Tx, Hs, "w-", lw=1.5)
+            ax.plot(Tx, Hs, "m--", lw=0.8)
             # if "Op" in p:
             #    for h in Hs:
             #        arg = np.argmin(np.abs(o[l0:l1, Hs.tolist().index(h)]))
@@ -312,7 +305,7 @@ def compute_2D_TS(
         ax.set_ylim(100, 300)
         for d in vlines:
             ax.axvline(d, ls="--", lw=0.4, color="k")
-        if np.mod(i, 2)==1:
+        if np.mod(i, 2) == 1:
             cax = ax.inset_axes([1.04, 0.1, 0.05, 0.8], transform=ax.transAxes)
             cb = fig.colorbar(im, ax=ax, cax=cax)
             cb.set_label(r"$cm^{-3}s^{-1}$")
@@ -320,33 +313,37 @@ def compute_2D_TS(
             ax.set_yticklabels(["", "", "", "", ""])
     return
 
-def create_master_plot(stn="lusk", ):
+
+def create_master_plot(
+    stn="lusk",
+):
     from fetch import DiffWACCMX
+
     params = [
         {
             "name": "NOp",
-            "unit_multiplier": 1.,
+            "unit_multiplier": 1.0,
             "unit": "cc",
             "mol_to_cc": "T",
             "interpolate": {"scale": "log", "type": "linear"},
         },
         {
             "name": "O2p",
-            "unit_multiplier": 1.,
+            "unit_multiplier": 1.0,
             "unit": "cc",
             "mol_to_cc": "T",
             "interpolate": {"scale": "log", "type": "linear"},
         },
         {
             "name": "N2p",
-            "unit_multiplier": 1.,
+            "unit_multiplier": 1.0,
             "unit": "cc",
             "mol_to_cc": "T",
             "interpolate": {"scale": "log", "type": "linear"},
         },
         {
             "name": "e",
-            "unit_multiplier": 1.,
+            "unit_multiplier": 1.0,
             "unit": "cc",
             "mol_to_cc": "T",
             "interpolate": {"scale": "log", "type": "linear"},
@@ -358,10 +355,14 @@ def create_master_plot(stn="lusk", ):
         params=params,
         stn=stn,
     )
-    fig, axes = plt.subplots(dpi=200, figsize=(4, 10), nrows=5, ncols=2)
+    fig, axes = plt.subplots(dpi=240, figsize=(6, 2.5), nrows=1, ncols=2)
     axes = axes.ravel()
     compute_2D_TS_F1(axes[:2], dw, params, fig)
+    fig.subplots_adjust(wspace=0.1, hspace=0.1)
     del dw
+
+    fig, axes = plt.subplots(dpi=200, figsize=(6, 8), nrows=3, ncols=2)
+    axes = axes.ravel()
     params = [
         {
             "name": "Op_CHMP",
@@ -400,9 +401,12 @@ def create_master_plot(stn="lusk", ):
         params=params,
         stn=stn,
     )
-    compute_2D_TS(axes[2:8], dw, params, fig)
-    del dw
-    compute_1D_TS(axes[8:])
+    compute_2D_TS(axes, dw, params, fig)
     fig.subplots_adjust(wspace=0.1, hspace=0.4)
+    del dw
+
+    fig, axes = plt.subplots(dpi=200, figsize=(6, 2.5), nrows=1, ncols=2)
+    axes = axes.ravel()
+    compute_1D_TS(axes)
+    fig.subplots_adjust(wspace=0.1, hspace=0.1)
     return fig
-    

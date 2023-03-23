@@ -18,9 +18,8 @@ import sys
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-from loguru import logger
-
 import plots
+from loguru import logger
 
 sys.path.extend(["py/"])
 

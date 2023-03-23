@@ -43,6 +43,7 @@ class OverlayDataset(object):
     def _add_axis(self, date, h):
         # from sd_carto import SDCarto
         from sd_carto import SDCarto
+
         self.frm = ccrs.Geodetic()
         self.to = ccrs.NorthPolarStereo(-90, 90)
         self._num_subplots_created += 1
@@ -68,7 +69,7 @@ class OverlayDataset(object):
         gl.n_steps = 90
         ax.mark_latitudes(plt_lats, fontsize="small", color="darkblue")
         ax.mark_longitudes(plt_lons, fontsize="small", color="darkblue")
-        #ax.date_string(h)
+        # ax.date_string(h)
         return ax
 
     def plot_data(self, df, date, h, p_name, colorbar_label):

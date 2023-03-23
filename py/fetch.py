@@ -19,9 +19,8 @@ import netCDF4 as nc
 import numpy as np
 import pandas as pd
 import scipy.io as io
-from loguru import logger
-
 import utils
+from loguru import logger
 
 sys.path.extend(["py/"])
 
