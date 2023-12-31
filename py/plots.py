@@ -42,7 +42,7 @@ class OverlayDataset(object):
 
     def _add_axis(self, date, h):
         # from sd_carto import SDCarto
-        from sd_carto import SDCarto
+        pass
 
         self.frm = ccrs.Geodetic()
         self.to = ccrs.NorthPolarStereo(-90, 90)

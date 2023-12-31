@@ -233,6 +233,8 @@ class FetchModel(object):
         self.load_file()
         self.extract_dimension()
         self.run_extractions()
+        if "ECL" in fname:
+            self.extract_sol_mask()
         return
 
     def transform_density(self, T, var, unit="cc"):
@@ -300,6 +302,14 @@ class FetchModel(object):
             self.dataset[i] = {}
             self.dataset[i]["value"] = var
         return
+    
+    def extract_sol_mask(self):
+        logger.info(f"Run extraction Mask")
+        var = self.ds.variables["SOLAR_MASK"][:]
+        i = len(self.dataset)
+        self.dataset[i] = {}
+        self.dataset[i]["value"] = var
+        return
 
     def __fetch_latlon_by_station__(self, stn):
         """
@@ -352,6 +362,19 @@ class FetchModel(object):
                 p["interpolate"]["type"],
             )
             logger.info(f"Run ineterpolation {self.fname} {stn} {p['name']}")
+            val = self.dataset[i]["value"][it_start:it_end, :, idx, jdx]
+            px = np.zeros((val.shape[0], len(self.intp_height)))
+            for tj in range(val.shape[0]):
+                px[tj, :] = self.__intp_heights__(Z3[tj, :], val[tj, :], scale, typ)
+            self.dataset[i]["interpol_value"] = {
+                "stn": stn,
+                "value": px,
+                "time": self.time[it_start:it_end],
+            }
+        if "ECL" in self.fname:
+            i = len(self.params)
+            scale, typ = "linear", "linear"
+            logger.info(f"Run ineterpolation {self.fname} {stn} Mask")
             val = self.dataset[i]["value"][it_start:it_end, :, idx, jdx]
             px = np.zeros((val.shape[0], len(self.intp_height)))
             for tj in range(val.shape[0]):
