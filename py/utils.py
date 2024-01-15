@@ -20,7 +20,7 @@ import numpy as np
 from scipy import array
 from scipy.interpolate import interp1d
 
-plt.style.use(["science", "ieee"])
+import mplstyle
 
 
 def smooth(x, window_len=51, window="hanning"):

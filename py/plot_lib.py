@@ -20,7 +20,7 @@ import numpy as np
 from scipy import array
 from scipy.interpolate import interp1d
 
-plt.style.use(["science", "ieee"])
+import mplstyle
 plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["font.sans-serif"] = ["Tahoma", "DejaVu Sans", "Lucida Grande", "Verdana"]
 import matplotlib as mpl
@@ -359,6 +359,7 @@ def create_master_plot(
     axes = axes.ravel()
     compute_2D_TS_F1(axes[:2], dw, params, fig)
     fig.subplots_adjust(wspace=0.1, hspace=0.1)
+    fig.savefig("dataset/figures/density_distribution.png", bbox_inches="tight")
     del dw
 
     fig, axes = plt.subplots(dpi=200, figsize=(6, 8), nrows=3, ncols=2)
@@ -403,10 +404,12 @@ def create_master_plot(
     )
     compute_2D_TS(axes, dw, params, fig)
     fig.subplots_adjust(wspace=0.1, hspace=0.4)
+    fig.savefig("dataset/figures/difference_distribution.png", bbox_inches="tight")
     del dw
 
     fig, axes = plt.subplots(dpi=200, figsize=(6, 2.5), nrows=1, ncols=2)
     axes = axes.ravel()
     compute_1D_TS(axes)
     fig.subplots_adjust(wspace=0.1, hspace=0.1)
+    fig.savefig("dataset/figures/onedim_distribution.png", bbox_inches="tight")
     return fig
