@@ -169,11 +169,12 @@ class Fetch2DModel(object):
         _ij_ = (np.argmin(np.abs(self.latx - lat)), np.argmin(np.abs(self.lonx - lon)))
         return _ij_
 
-    def __get_h_index__(self, Z):
+    def __get_h_index__(self, Z, h=None):
         """
         Get h index
         """
-        _k_ = np.argmin(np.abs(self.h - Z))
+        h = h if h else self.h
+        _k_ = np.argmin(np.abs(h - Z))
         return _k_
 
     def run_2D_interpolate(self, row):
@@ -185,7 +186,7 @@ class Fetch2DModel(object):
         stn: Station name
         loc: Lat/Lon position
         """
-        tdx = self.time.index(self.tm)
+        tdx = self.time.index(self.event)
         tdx0 = tdx - 1
         idx, jdx = self.__get_latlon_index__(row["lat"], row["lon"])
         zdx = self.__get_h_index__(self.Z3[tdx, :, idx, jdx])
@@ -195,6 +196,22 @@ class Fetch2DModel(object):
                 self.dataset[i]["value"][tdx, zdx, idx, jdx]
                 - self.dataset[i]["value"][tdx0, zdx0, idx, jdx]
             )
+            row[p["name"]] = self.dataset[i]["value"][tdx, zdx, idx, jdx]
+        return row
+
+    def run_2D_interpolation(self, row):
+        """
+        Run fitting algorithm to fit the data
+        into equal height bin for a lat-lon.
+        Parameters:
+        -----------
+        stn: Station name
+        loc: Lat/Lon position
+        """
+        tdx = self.time.index(self.event)
+        idx, jdx = self.__get_latlon_index__(row["lat"], row["lon"])
+        zdx = self.__get_h_index__(self.Z3[tdx, :, idx, jdx], row["h"])
+        for i, p in enumerate(self.params):
             row[p["name"]] = self.dataset[i]["value"][tdx, zdx, idx, jdx]
         return row
 

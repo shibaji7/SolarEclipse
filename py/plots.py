@@ -21,9 +21,9 @@ from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
 from loguru import logger
 
 sys.path.extend(["py/"])
+import mplstyle
 
-
-plt.style.use(["science", "ieee"])
+#plt.style.use(["science", "ieee"])
 
 
 class OverlayDataset(object):

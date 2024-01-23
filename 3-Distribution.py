@@ -51,7 +51,26 @@ def fetch_occl_data(d):
     return lat, lon, glat, glon, of
 
 date = dt.datetime(2017,8,21,18)
-lat, lon, glat, glon, of = fetch_occl_data(date)
+#lat, lon, glat, glon, of = fetch_occl_data(date)
+params = [
+    {
+        "name": "e",
+        "unit_multiplier": 1.,
+        "unit": "cc",
+        "mol_to_cc": "T",
+        "interpolate": {"scale": "log", "type": "linear"},
+    },
+]
+ecl = FetchModel(
+    "dataset/29jan2022/ECL_1100_0100_all.nc",
+    copy.copy(params), date
+)
+of = ecl.dataset[1]["value"]
+lat, lon = ecl.latx, ecl.lonx
+of = of[ecl.time.index(date),0,:,:]
+print(lat.shape, lon.shape)
+glat, glon = np.meshgrid(lat, lon)
+print(glat.shape, glon.shape, np.max(of), np.min(of))
 
 params = [
     {
@@ -73,7 +92,7 @@ f_dif_dur = np.nan*np.zeros((len(lat_list), len(lon_list)))
 
 for i, lat in enumerate(lat_list):
     for j, lon in enumerate(lon_list):
-        print(len(lat_list)*len(lon_list),"----", (len(lon_list)*i+j))
+        #print(len(lat_list)*len(lon_list),"----", (len(lon_list)*i+j))
         file = f"dataset/ds/{int(lat)}_{int(lon)}.txt"
         if not os.path.exists(file):
             dw0 = DiffWACCMX(
@@ -120,7 +139,7 @@ mpl.rcParams.update({"xtick.labelsize":8, "ytick.labelsize":8, "font.size":8})
 #%matplotlib inline
 fig = plt.figure(figsize=(3, 4.5), dpi=240)
 ax = fig.add_subplot(
-            311,
+            211,
             projection=ccrs.PlateCarree()
         )
 kwargs = {}
@@ -145,10 +164,8 @@ gl.yformatter = LATITUDE_FORMATTER
 gl.n_steps = 90
 gl.ylabel_style = {'size':8, 'color': 'b'}
 gl.xlabel_style = {"size":8, 'color': 'b'}
-
 XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), glon, glat)
 X, Y = XYZ[:, :, 0], XYZ[:, :, 1]
-
 im = ax.contourf(
     X, Y, of.T, transform=ccrs.PlateCarree(), cmap="gray", alpha=0.5,
     levels=[0,.2,.4,.6,.8,1.],
@@ -159,50 +176,55 @@ cb = fig.colorbar(im, ax=ax, cax=cax)
 cb.set_label(r"Occultation, $\mathcal{O}$")
 ax.text(0.05, 0.95, "(a)", transform=ax.transAxes, ha="left", va="center")
 
-ax = fig.add_subplot(
-            312,
-            projection=ccrs.PlateCarree()
-        )
-kwargs = {}
-kwargs["edgecolor"] = "k"
-kwargs["facecolor"] = "none"
-kwargs["linewidth"] = 0.3
-feature = cartopy.feature.NaturalEarthFeature(
-            "physical", "coastline", "50m", **kwargs
-        )
-ax.add_feature(feature, **kwargs)
-ax.set_extent([-140, -40, 20, 70], crs=ccrs.PlateCarree())
-plt_lons = np.arange(-180, 181, 30)
-mark_lons = np.arange(-180, 180, 30)
-plt_lats = np.arange(20, 90, 15)
-gl = ax.gridlines(ccrs.PlateCarree(), linewidth=0.5, draw_labels=True,)
-gl.xlabels_top = False
-gl.ylabels_right = False
-gl.xlocator = mticker.FixedLocator(plt_lons)
-gl.ylocator = mticker.FixedLocator(plt_lats)
-gl.xformatter = LONGITUDE_FORMATTER
-gl.yformatter = LATITUDE_FORMATTER
-gl.n_steps = 90
-gl.ylabel_style = {'size':8, 'color': 'b'}
-gl.xlabel_style = {"size":8, 'color': 'b'}
-Lat, Lon, Val = get_gridded_parameters(obj)
-Val[Val==np.nan] = 0
-from scipy.ndimage import gaussian_filter
-Val = gaussian_filter(Val, sigma=0.5)
-XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), Lon, Lat)
-X, Y = XYZ[:, :, 0], XYZ[:, :, 1]
-im = ax.contourf(
-    X, Y, Val.T, transform=ccrs.PlateCarree(), cmap="gray_r", alpha=0.5,
-    #levels=[0,.2,.4,.6,.8,1.],
-    vmin=0, vmax=150, **kwargs
-)
-cax = ax.inset_axes([1.05, 0.1, 0.05, 0.8], transform=ax.transAxes)
-cb = fig.colorbar(im, ax=ax, cax=cax)
-cb.set_label(r"$\Delta T_{GC}$, minutes")
-ax.text(0.05, 0.95, "(b)", transform=ax.transAxes, ha="left", va="center")
+# ax = fig.add_subplot(
+#             312,
+#             projection=ccrs.PlateCarree()
+#         )
+# kwargs = {}
+# kwargs["edgecolor"] = "k"
+# kwargs["facecolor"] = "none"
+# kwargs["linewidth"] = 0.3
+# feature = cartopy.feature.NaturalEarthFeature(
+#             "physical", "coastline", "50m", **kwargs
+#         )
+# ax.add_feature(feature, **kwargs)
+# ax.set_extent([-140, -40, 20, 70], crs=ccrs.PlateCarree())
+# plt_lons = np.arange(-180, 181, 30)
+# mark_lons = np.arange(-180, 180, 30)
+# plt_lats = np.arange(20, 90, 15)
+# gl = ax.gridlines(ccrs.PlateCarree(), linewidth=0.5, draw_labels=True,)
+# gl.xlabels_top = False
+# gl.ylabels_right = False
+# gl.xlocator = mticker.FixedLocator(plt_lons)
+# gl.ylocator = mticker.FixedLocator(plt_lats)
+# gl.xformatter = LONGITUDE_FORMATTER
+# gl.yformatter = LATITUDE_FORMATTER
+# gl.n_steps = 90
+# gl.ylabel_style = {'size':8, 'color': 'b'}
+# gl.xlabel_style = {"size":8, 'color': 'b'}
+# ax.contourf(
+#     X, Y, of.T, transform=ccrs.PlateCarree(), cmap="gray", alpha=0.5,
+#     levels=[0,.2,.4,.6,.8,1.],
+#     vmin=0, vmax=1, **kwargs
+# )
+# Lat, Lon, Val = get_gridded_parameters(obj)
+# Val[Val==np.nan] = 0
+# from scipy.ndimage import gaussian_filter
+# Val = gaussian_filter(Val, sigma=1.)
+# XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), Lon, Lat)
+# X, Y = XYZ[:, :, 0], XYZ[:, :, 1]
+# im = ax.contourf(
+#     X, Y, Val.T, transform=ccrs.PlateCarree(), cmap="Reds", alpha=0.5,
+#     #levels=[0,.2,.4,.6,.8,1.],
+#     vmin=0, vmax=150, **kwargs
+# )
+# cax = ax.inset_axes([1.05, 0.1, 0.05, 0.8], transform=ax.transAxes)
+# cb = fig.colorbar(im, ax=ax, cax=cax)
+# cb.set_label(r"$\Delta T_{GC}$, minutes")
+# ax.text(0.05, 0.95, "(b)", transform=ax.transAxes, ha="left", va="center")
 
 ax = fig.add_subplot(
-            313,
+            212,
             projection=ccrs.PlateCarree()
         )
 kwargs = {}
@@ -227,21 +249,27 @@ gl.yformatter = LATITUDE_FORMATTER
 gl.n_steps = 90
 gl.ylabel_style = {'size':8, 'color': 'b'}
 gl.xlabel_style = {"size":8, 'color': 'b'}
+ax.contourf(
+    X, Y, of.T, transform=ccrs.PlateCarree(), cmap="gray", alpha=0.5,
+    levels=[0,.2,.4,.6,.8,1.],
+    vmin=0, vmax=1, **kwargs
+)
 Lat, Lon, Val = get_gridded_parameters(obj, zparam="gc_del_n")
+vmax = np.nanmax(Val)
 Val[Val==np.nan] = 0
 from scipy.ndimage import gaussian_filter
-Val = gaussian_filter(Val, sigma=0.5)
+Val = gaussian_filter(Val, sigma=1)
 XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), Lon, Lat)
 X, Y = XYZ[:, :, 0], XYZ[:, :, 1]
 im = ax.contourf(
-    X, Y, Val.T, transform=ccrs.PlateCarree(), cmap="gray_r", alpha=0.5,
+    X, Y, Val.T, transform=ccrs.PlateCarree(), cmap="Reds", alpha=0.5,
     #levels=[0,.2,.4,.6,.8,1.],
     vmin=0, vmax=5000, **kwargs
 )
 cax = ax.inset_axes([1.05, 0.1, 0.05, 0.8], transform=ax.transAxes)
 cb = fig.colorbar(im, ax=ax, cax=cax)
 cb.set_label(r"$GC^p$, /cc")
-ax.text(0.05, 0.95, "(c)", transform=ax.transAxes, ha="left", va="center")
+ax.text(0.05, 0.95, "(b)", transform=ax.transAxes, ha="left", va="center")
 
 fig.subplots_adjust(wspace=0.5, hspace=0.3)
 fig.savefig("dataset/figures/globe_distribution.png", bbox_inches="tight")

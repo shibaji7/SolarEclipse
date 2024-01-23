@@ -339,6 +339,24 @@ class FetchModel(object):
             pnew = 10 ** utils.extrap1d(h, np.log10(param), kind=kind)(self.intp_height)
         return pnew
 
+    def run_intp_loc(self, loc, date):
+        lat, lon = loc["lat"], loc["lon"]
+        it_start = self.time.index(date)
+        idx, jdx = self.__get_latlon_index__(lat, lon)
+        self.intp_height = np.arange(50, 600, 1)
+        Z3, p = self.Z3[it_start, :, idx, jdx], self.params[0]
+        scale, typ = (
+                p["interpolate"]["scale"],
+                p["interpolate"]["type"],
+            )
+        val = self.dataset[0]["value"][it_start, :, idx, jdx]
+        px = self.__intp_heights__(Z3, val, scale, typ)
+        p = pd.DataFrame()
+        p["value"], p["height"] = px, self.intp_height
+        p["lat"], p["lon"] = loc["lat"], loc["lon"]
+        return p
+
+
     def run_height_interpolate(self, stn="lusk", loc=None, t_start=None, t_end=None):
         """
         Run fitting algorithm to fit the data
