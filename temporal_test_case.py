@@ -13,6 +13,8 @@ from cartopy.feature.nightshade import Nightshade
 import datetime as dt
 import matplotlib.ticker as mticker
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+
+import shapefile
 #from read_rad import Radar
 import pydarn
 import numpy as np
@@ -214,6 +216,27 @@ def smooth(x,window_len=51,window="hanning"):
     y = y[int(d/2):-int(d/2)]
     return y
 
+def load_path(ax, fname = "database/2024-path/center.shp", color="k"):
+    shape = shapefile.Reader(fname)
+    if len(shape.shapeRecords()) == 1:
+        feature = shape.shapeRecords()[0]
+        first = feature.shape.__geo_interface__    
+        coords = first["coordinates"]
+        lats, lons = (
+            [d[1] for d in list(coords)],
+            [d[0] for d in list(coords)]
+        )
+        xyz = to.transform_points(ccrs.PlateCarree(), n.array(lons), n.array(lats))
+        x, y = xyz[:, 0], xyz[:, 1]
+        ax.plot(x, y, ls=":", color=color, lw=0.7, alpha=1.)
+    else:
+        latsU, lonsU = ([], [])
+        latsL, lonsL = ([], [])
+        for feature in shape.shapeRecords():
+            first = feature.shape.__geo_interface__
+            coords = first["coordinates"]
+    return
+
 def fetch_event(date, lats, lons, i, to, rads, fname=None, cb=True, beam_sound={}):
     t0 = ephem.date(
         (
@@ -241,72 +264,9 @@ def fetch_event(date, lats, lons, i, to, rads, fname=None, cb=True, beam_sound={
     overlay_instrument(ax, dict(lat=42.6, lon=-71.5, name="MHISR"), to=to, mult=-1, markerColor="r")
 
     # Totality path
-    if fname:
-        LatC, LonC = [], []
-        LatN, LonN = [], []
-        LatS, LonS = [], []
-        with open(fname, "r") as f: lines = f.readlines()
-        for line in lines:
-            line = line.split("  ")
-            locN, loc, locS = line[1], line[3], line[2]
-
-            latcomp = -1 if "S" in loc else 1
-            loc = loc.split(" ")
-            LatC.append(
-                latcomp*float(loc[0])+
-                float(loc[1].\
-                    replace(".","").\
-                    replace("N","").\
-                    replace("S",""))/1e3
-            )
-            LonC.append(
-                -1*float(loc[2])+
-                float(loc[3].\
-                    replace(".","").\
-                    replace("W",""))/1e3
-            )
-
-            locS = locS.split(" ")
-            LatS.append(
-                latcomp*float(locS[0])+
-                float(locS[1].\
-                    replace(".","").\
-                    replace("N","").\
-                    replace("S",""))/1e3
-            )
-            LonS.append(
-                -1*float(locS[2])+
-                float(locS[3].\
-                    replace(".","").\
-                    replace("W",""))/1e3
-            )
-
-            locN = locN.split(" ")
-            LatN.append(
-                latcomp*float(locN[0])+
-                float(locN[1].\
-                    replace(".","").\
-                    replace("N","").\
-                    replace("S",""))/1e3
-            )
-            LonN.append(
-                -1*float(locN[2])+
-                float(locN[3].\
-                    replace(".","").\
-                    replace("W",""))/1e3
-            )
-        LatC, LonC = smooth(np.array(LatC))+0.4, smooth(np.array(LonC))
-        LatS, LonS = smooth(np.array(LatS))+0.4, smooth(np.array(LonS))
-        LatN, LonN = smooth(np.array(LatN))+0.4, smooth(np.array(LonN))
-        xyz = to.transform_points(ccrs.PlateCarree(), n.array(LonC), n.array(LatC))
-        x, y = xyz[:, 0], xyz[:, 1]
-        ax.plot(x, y, ls=":", color="k", lw=0.7, alpha=1.)
-        xyz = to.transform_points(ccrs.PlateCarree(), n.array(LonS), n.array(LatS))
-        x, y = xyz[:, 0], xyz[:, 1]
-        ax.plot(x, y, ls=":", color="r", lw=0.7, alpha=1.)
-        xyz = to.transform_points(ccrs.PlateCarree(), n.array(LonN), n.array(LatN))
-        x, y = xyz[:, 0], xyz[:, 1]
-        ax.plot(x, y, ls=":", color="r", lw=0.7, alpha=1.)
+    load_path(ax, "database/2024-path/center.shp", "k")
+    #load_path(ax, "database/2024-path/ppath01.shp", "r")
+    
     ax.set_extent([-120, -60, 10, 80], crs = ccrs.PlateCarree())
     ax.text(
         0.99,
@@ -323,11 +283,12 @@ def fetch_event(date, lats, lons, i, to, rads, fname=None, cb=True, beam_sound={
 
 
 if __name__ == "__main__":
+    mode = "mode1"
     beams=[0, 3, 7, 11, 15]
     freqs=["f0","f1","f2","f3"]
     colors=["darkred","darkgreen","darkblue","m"]
     beam_sound = 3
-    runtime = int(5*60/beam_sound)
+    runtime = int(120*60/beam_sound)
     dates = [
         dt.datetime(2024,4,8,18) + dt.timedelta(seconds=beam_sound*i)
         for i in range(runtime)
@@ -346,5 +307,8 @@ if __name__ == "__main__":
         if not os.path.exists("tmp/%04d.png"%i):
             fetch_event(date, lats, lons, i, to, ["fhe"], "database/2024.csv", beam_sound=beam_sound)
             plt.close()
-    cmd = f"ffmpeg -framerate 2 -pattern_type glob -i 'tmp/*.png' -c:v libx264 tmp/mode1.mp4"
+        #break
+    cmd = f"ffmpeg -framerate 2 -pattern_type glob -i 'tmp/*.png' -c:v libx264 tmp/{mode}.mp4"
+    os.system(cmd)
+    cmd = f"ffmpeg -framerate 10 -pattern_type glob -i 'tmp/*.png' tmp/{mode}.gif"
     os.system(cmd)
