@@ -310,5 +310,5 @@ if __name__ == "__main__":
         #break
     cmd = f"ffmpeg -framerate 2 -pattern_type glob -i 'tmp/*.png' -c:v libx264 tmp/{mode}.mp4"
     os.system(cmd)
-    cmd = f"ffmpeg -framerate 10 -pattern_type glob -i 'tmp/*.png' tmp/{mode}.gif"
+    cmd = f"ffmpeg -framerate 30 -pattern_type glob -i 'tmp/*.png' tmp/{mode}.gif"
     os.system(cmd)
