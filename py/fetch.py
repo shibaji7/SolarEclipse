@@ -319,6 +319,9 @@ class FetchModel(object):
             "lusk": {"lat": 42.7625, "lon": -104.4522},
             "boulder": {"lat": 40.015, "lon": -105.2705},
             "mil": {"lat": 42.61, "lon": -71.49},
+            "center": {"lat":41, "lon":-99},
+            "lat_low": {"lat":41-7, "lon":-99},
+            "lat_up": {"lat":41+8, "lon":-99},
         }
         return locations[stn]
 
