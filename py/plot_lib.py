@@ -88,12 +88,13 @@ def compute_1D_TS(
     """
     files = [
         "latest_e.pickle",
-        "latest_Op_CHM.pickle",
+        "latest_Op_CHMP.pickle",
+        "latest_Op_CHML.pickle",
         "latest_dwind.pickle",
         "latest_dfield.pickle",
         "latest_amb_diff.pickle",
     ]
-    params = ["e", "Op_CHM", "dwind", "dfield", "amb_diff"]
+    params = ["e", "Op_CHMP","Op_CHML", "dwind", "dfield", "amb_diff"]
     idat, jdat = [], []
     for i, f in enumerate(files):
         with open("dataset/" + f, "rb") as handle:
@@ -105,6 +106,7 @@ def compute_1D_TS(
             jdat.append(o[:, hs.tolist().index(240)])
     dat = np.array([idat, jdat])
 
+    multipliers = [0.1, 1]
     for i, h in enumerate(Hs):
         ax = axes[i]
         ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
@@ -118,12 +120,13 @@ def compute_1D_TS(
             time,
             dat[i][0] / 1000,
             "gray",
-            lw=0.5,
+            lw=1.,
             ls="-",
             label=r"$\delta(e)\times 10^3$",
         )
-        ax.plot(time, dat[i][1], "r", lw=0.5, ls="-", label=r"$\delta(p-l)$")
-        ax.plot(time, dat[i][2], "b", lw=0.5, ls="-", label=r"$\delta(D_{wind})$")
+        m = multipliers[i]
+        ax.plot(time, m*(dat[i][1]+dat[i][2]), "r", lw=0.5, ls="-", label=r"$\delta(p-l)$")
+        ax.plot(time, dat[i][3], "b", lw=0.5, ls="-", label=r"$\delta(D_{wind})$")
         ax.plot(
             time,
             dat[i][3],
@@ -133,7 +136,11 @@ def compute_1D_TS(
             label=r"$\delta(D_{\vec{E}\times\vec{B}})$",
         )
         ax.plot(
-            time, dat[i][4], "darkgreen", lw=0.5, ls="-", label=r"$\delta(D_{\alpha})$"
+            time, dat[i][5], "darkgreen", lw=0.5, ls="-", label=r"$\delta(D_{\alpha})$"
+        )
+        ax.plot(
+            time, m*(dat[i][1]+dat[i][2]+dat[i][3]+dat[i][4]+dat[i][5]),
+            "cyan", lw=0.5, ls="-", label=r"$\sum\delta(\mu)$"
         )
         ax.axhline(0, ls="--", lw=0.3, alpha=0.4, color="k")
         ax.text(
