@@ -76,11 +76,19 @@ ax.text(0.05, 0.95, "(a)", transform=ax.transAxes, ha="left", va="center")
 
 center, lonx = 41, -99
 lat_low, lat_up = center-7, center+7
+lat_boulder, lon_boulder = 40.0150, -105.2705
+lat_lusk, lon_lusk = 40.0150, -105.2705
 XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), 
                                           np.array([[lonx, lonx, lonx]]), 
                                           np.array([[center, lat_low, lat_up]]))
 X, Y = XYZ[:, :, 0], XYZ[:, :, 1]
 ax.scatter(X, Y, s=10, color="magenta", marker=".", fc="None", lw=0.3)
+
+XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), 
+                                          np.array([[lon_boulder, lon_lusk]]), 
+                                          np.array([[lat_boulder, lat_lusk]]))
+X, Y = XYZ[:, :, 0], XYZ[:, :, 1]
+ax.scatter(X, Y, s=1, color="b", marker="D", fc="None", lw=0.3)
 
 fig.subplots_adjust(wspace=0.5, hspace=0.3)
 fig.savefig("dataset/figures/zenith_angle.png", bbox_inches="tight")
@@ -93,11 +101,109 @@ cos_szas = [
 
 import sys
 sys.path.extend(["py/","pyrt/"])
-from fetch import DiffWACCMX
-stn_low, stn_up = "lat_low", "lat_up"
+from fetch import FetchModel, pconst, DiffWACCMX
+import aacgmv2
+
+
+mpl.rcParams.update({"xtick.labelsize": 5, "ytick.labelsize":5, "font.size":5})
+
+mpl.rcParams.update({"xtick.labelsize":10, "ytick.labelsize":10, "font.size":10})
+# fig = plt.figure()
+
+k = pconst["q_e"]**2/(pconst["m_e"]*pconst["eps0"])
+stns = ["lat_low", "center", "lat_up"]
 params = [
     {
+        "name": "e",
+        "unit_multiplier": 1.,
+        "unit": "cc",
+        "mol_to_cc": "T",
+        "interpolate": {"scale": "log", "type": "linear"},
+    },
+]
+fm = FetchModel(
+    "dataset/29jan2022/ECL_1100_0100_all.nc",
+    params=params,
+)
+fig, axes = plt.subplots(dpi=240, figsize=(6, 5), nrows=2, ncols=1, sharex="all")
+for ax in axes:
+    ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
+    ax.xaxis.set_major_locator(mdates.HourLocator())
+    ax.set_xlim([
+        dt.datetime(2017,8,21,15),
+        dt.datetime(2017,8,21,21)
+    ])
+
+axes[0].set_ylim([2, 8])
+axes[0].set_ylabel(
+    r"$foF_2$, MHz"
+)
+axes[1].set_ylim([2, 5])
+axes[1].set_ylabel(
+    r"$foF_1$, MHz"
+)
+axes[1].set_xlabel("UT")
+values_150, values_240 = [], []
+for stn, c in zip(stns, ["darkred", "darkblue", "darkgreen"]):
+    fm.run_height_interpolate(stn)
+    loc = fm.__fetch_latlon_by_station__(stn)
+    olat, olon, _ = aacgmv2.get_aacgm_coord(loc["lat"], loc["lon"], 300, dt.datetime(2017,8,21,18))
+
+    ttime0 = fm.dataset[0]["interpol_value"]["time"]
+    ne = fm.dataset[0]["interpol_value"]["value"]
+    f_240, f_150 = (
+        np.sqrt(ne[:, np.argmin(np.abs(fm.intp_height-240))]*1e6*k)/(2*np.pi),
+        np.sqrt(ne[:, np.argmin(np.abs(fm.intp_height-150))]*1e6*k)/(2*np.pi)
+    )
+    axes[0].plot(ttime0, f_240/1e6, color=c, ls="-", lw=0.8, label=r"$\theta=%.1f$"%olat)
+    axes[1].plot(ttime0, f_150/1e6, color=c, ls="-", lw=0.8,)
+    axes[0].legend(loc=1)
+    values_150.append(f_150[0])
+    values_240.append(f_240[0])
+print((np.max(values_150)-np.min(values_150))/np.min(values_150))
+print((np.max(values_240)-np.min(values_240))/np.min(values_240))
+fig.subplots_adjust(hspace=0.1, wspace=0.1)
+fig.savefig("dataset/figures/latitudinal_D_compare.png", bbox_inches="tight")
+del fm
+
+fig, axes = plt.subplots(dpi=240, figsize=(6, 5), nrows=2, ncols=1, sharex="all")
+for ax in axes:
+    ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
+    ax.xaxis.set_major_locator(mdates.HourLocator())
+    ax.set_xlim([
+        dt.datetime(2017,8,21,15),
+        dt.datetime(2017,8,21,21)
+    ])
+axes[0].set_ylabel(
+    r"$\delta(p-l)$, $cm^{-3} s^{-1}$"
+)
+# axes[1].set_ylim([2, 5])
+axes[1].set_ylabel(
+    r"$\sum\delta(D_x)$, $cm^{-3} s^{-1}$"
+)
+axes[1].set_xlabel("UT")
+
+params = [
+    {
+        "name": "Op_CHMP",
+        "unit_multiplier": 1.0,
+        "unit": "cc",
+        "interpolate": {"scale": "linear", "type": "linear"},
+    },
+    {
+        "name": "Op_CHML",
+        "unit_multiplier": 1.0,
+        "unit": "cc",
+        "interpolate": {"scale": "linear", "type": "linear"},
+    },
+    {
         "name": "amb_diff",
+        "unit_multiplier": 1.0,
+        "unit": "cc",
+        "interpolate": {"scale": "linear", "type": "linear"},
+    },
+    {
+        "name": "dwind",
         "unit_multiplier": 1.0,
         "unit": "cc",
         "interpolate": {"scale": "linear", "type": "linear"},
@@ -109,99 +215,33 @@ params = [
         "interpolate": {"scale": "linear", "type": "linear"},
     },
 ]
-dw_low,dw_up =  (
-    DiffWACCMX(
+
+for stn, c in zip(stns, ["darkred", "darkblue", "darkgreen"]):
+    dw = DiffWACCMX(
         "dataset/29jan2022/ECL_1100_0100_all.nc",
         "dataset/29jan2022/BGC_1100_0100_all.nc",
         params=params,
-        stn=stn_low,
-    ),
-    DiffWACCMX(
-        "dataset/29jan2022/ECL_1100_0100_all.nc",
-        "dataset/29jan2022/BGC_1100_0100_all.nc",
-        params=params,
-        stn=stn_up,
+        stn=stn,
     )
-)
-dct_low, dct_up = (
-    dw_low.diffential_difference_data(),
-    dw_up.diffential_difference_data()
-)
-del dw_low, dw_up
-
-print(dct_low.keys())
-fig, axes = plt.subplots(dpi=200, figsize=(6, 5), nrows=2, ncols=2, sharex="all", sharey="all")
-axes = axes.ravel()
-
-for ax in axes:
-    ax = axes[0]
-    ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
-    ax.xaxis.set_major_locator(mdates.HourLocator())
-    ax.set_xlim([
-        dt.datetime(2017,8,21,15),
-        dt.datetime(2017,8,21,21)
-    ])
-    ax.set_ylim(-3,3)
-
-ax = axes[0]
-ax.set_ylabel(
-    r"$\delta(D_{\alpha})$, $cm^{-3}s^{-1}$"
-)
-ax.plot(
-    dct_low["amb_diff_150"].time, 
-    dct_low["amb_diff_150"].d_dif,
-    color="r", lw=0.5, ls="-", 
-    label=r"$\theta-8$"
-)
-ax.plot(
-    dct_up["amb_diff_150"].time, 
-    dct_up["amb_diff_150"].d_dif,
-    color="k", lw=0.5, ls="-", 
-    label=r"$\theta+8$"
-)
-ax.legend(loc=1)
-ax.text(0.05,1.05,"h=150 km", ha="left", va="center", transform=ax.transAxes)
-ax = axes[1]
-ax.plot(
-    dct_low["amb_diff_240"].time, 
-    dct_low["amb_diff_240"].d_dif,
-    color="r", lw=0.5, ls="-", 
-)
-ax.plot(
-    dct_up["amb_diff_240"].time, 
-    dct_up["amb_diff_240"].d_dif,
-    color="k", lw=0.5, ls="-",
-)
-ax.text(0.05,1.05,"h=240 km", ha="left", va="center", transform=ax.transAxes)
-
-ax = axes[2]
-ax.set_ylabel(
-    r"$\delta(D_{\vec{E}\times\vec{B}})$, $cm^{-3}s^{-1}$"
-)
-ax.plot(
-    dct_low["dfield_150"].time, 
-    dct_low["dfield_150"].d_dif,
-    color="r", lw=0.5, ls="-", 
-)
-ax.plot(
-    dct_up["dfield_150"].time, 
-    dct_up["dfield_150"].d_dif,
-    color="k", lw=0.5, ls="-", 
-)
-ax.set_xlabel("UT")
-ax = axes[3]
-ax.plot(
-    dct_low["dfield_240"].time, 
-    dct_low["dfield_240"].d_dif,
-    color="r", lw=0.5, ls="-", 
-)
-ax.plot(
-    dct_up["dfield_240"].time, 
-    dct_up["dfield_240"].d_dif,
-    color="k", lw=0.5, ls="-",
-)
-ax.set_xlabel("UT")
-
-
+    dct = dw.diffential_difference_data(
+        kind="TS", hs=[150, 240]
+    )
+    loc = dw.eclipse.__fetch_latlon_by_station__(stn)
+    olat, olon, _ = aacgmv2.get_aacgm_coord(loc["lat"], loc["lon"], 300, dt.datetime(2017,8,21,18))
+    h = "240"
+    axes[0].plot(
+        dct["Op_CHML_"+h].time, 
+        dct["Op_CHMP_"+h].d_dif+dct["Op_CHML_"+h].d_dif, 
+        color=c, ls="-", lw=0.8, 
+        label=r"$\theta=%.1f$"%olat
+    )
+    axes[1].plot(
+        dct["amb_diff_"+h].time, 
+        dct["amb_diff_"+h].d_dif+dct["dwind_"+h].d_dif+dct["dfield_"+h].d_dif, 
+        color=c, ls="-", lw=0.8,
+    )
+    del dw, dct
+axes[0].legend(loc=1)
 fig.subplots_adjust(hspace=0.1, wspace=0.1)
-fig.savefig("dataset/figures/latitudinal_D_compare.png", bbox_inches="tight")
+fig.savefig("dataset/figures/latitudinal_Dx_compare.png", bbox_inches="tight")
+
