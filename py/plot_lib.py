@@ -106,7 +106,7 @@ def compute_1D_TS(
             jdat.append(o[:, hs.tolist().index(240)])
     dat = np.array([idat, jdat])
 
-    multipliers = [0.1, 1]
+    multipliers, rolls = [0.1, 1], [0, 1]
     for i, h in enumerate(Hs):
         ax = axes[i]
         ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
@@ -116,16 +116,16 @@ def compute_1D_TS(
         ax.set_ylabel(
             r"$\delta [e/\frac{\partial O^+}{\partial t}]$, $cm^{-3}/cm^{-3}s^{-1}$"
         )
+        m, r = multipliers[i], rolls[i]
         ax.plot(
             time,
-            dat[i][0] / 1000,
+            dat[i][0]/1000,
             "gray",
             lw=1.,
             ls="-",
             label=r"$\delta(e)\times 10^3$",
-        )
-        m = multipliers[i]
-        ax.plot(time, m*(dat[i][1]+dat[i][2]), "r", lw=0.5, ls="-", label=r"$\delta(p-l)$")
+        )        
+        ax.plot(time, (dat[i][1]-dat[i][2]), "r", lw=0.5, ls="-", label=r"$\delta(p-l)$")
         ax.plot(time, dat[i][3], "b", lw=0.5, ls="-", label=r"$\delta(D_{wind})$")
         ax.plot(
             time,
@@ -142,7 +142,7 @@ def compute_1D_TS(
             time, 
             np.roll(
                 m*(dat[i][1]+dat[i][2]+dat[i][3]+dat[i][4]+dat[i][5]),
-                10
+                r
             ),
             "cyan", lw=0.5, ls="-", label=r"$\sum\delta(\mu)$"
         )
