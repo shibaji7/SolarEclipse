@@ -216,6 +216,8 @@ params = [
     },
 ]
 
+ts_pl, ts_dm = [], []
+
 for stn, c in zip(stns, ["darkred", "darkblue", "darkgreen"]):
     dw = DiffWACCMX(
         "dataset/29jan2022/ECL_1100_0100_all.nc",
@@ -231,17 +233,40 @@ for stn, c in zip(stns, ["darkred", "darkblue", "darkgreen"]):
     h = "240"
     axes[0].plot(
         dct["Op_CHML_"+h].time, 
-        dct["Op_CHMP_"+h].d_dif+dct["Op_CHML_"+h].d_dif, 
+        dct["Op_CHMP_"+h].d_dif-dct["Op_CHML_"+h].d_dif, 
         color=c, ls="-", lw=0.8, 
         label=r"$\theta=%.1f$"%olat
     )
+    ts_pl.append(dct["Op_CHMP_"+h].d_dif-dct["Op_CHML_"+h].d_dif)
     axes[1].plot(
         dct["amb_diff_"+h].time, 
         dct["amb_diff_"+h].d_dif+dct["dwind_"+h].d_dif+dct["dfield_"+h].d_dif, 
         color=c, ls="-", lw=0.8,
     )
+    ts_dm.append(dct["amb_diff_"+h].d_dif+dct["dwind_"+h].d_dif+dct["dfield_"+h].d_dif)
     del dw, dct
 axes[0].legend(loc=1)
+
+ts_pl, ts_dm = (np.array(ts_pl), np.array(ts_dm))
+
+dts_pl, dts_dm = (
+    np.abs(ts_pl[0,:]-ts_pl[0,2]),
+    np.abs(ts_dm[0,:]-ts_dm[0,2])
+)
+print(
+    np.sqrt(((ts_pl[0] - ts_pl[2]) ** 2).mean()),
+    np.sqrt(((ts_dm[0] - ts_dm[2]) ** 2).mean())
+)
+axes[0].text(
+    0.05, 0.9, "RMSD: %.1f"%np.sqrt(((ts_pl[0] - ts_pl[2]) ** 2).mean()),
+    ha="left", va="center",
+    transform=axes[0].transAxes
+)
+axes[1].text(
+    0.05, 0.9, "RMSD: %.1f"%np.sqrt(((ts_dm[0] - ts_dm[2]) ** 2).mean()),
+    ha="left", va="center",
+    transform=axes[1].transAxes
+)
 fig.subplots_adjust(hspace=0.1, wspace=0.1)
 fig.savefig("dataset/figures/latitudinal_Dx_compare.png", bbox_inches="tight")
 
