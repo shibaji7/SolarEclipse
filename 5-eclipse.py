@@ -189,6 +189,9 @@ def fetch_event(date, lats, lons, i, to, rads, fname=None, cb=True):
     overlay_instrument(ax, dict(lat=39.992, lon=-105.269, name="Boulder"), to=to, mult=1)
     overlay_instrument(ax, dict(lat=42.75, lon=-104.455, name="Lusk"), to=to, mult=-1)
     overlay_instrument(ax, dict(lat=42.6, lon=-71.5, name="MHISR"), to=to, mult=-1, markerColor="r")
+    overlay_instrument(ax, dict(lat=37.94, lon=284.42 - 360, name="WI937"), to=to, mult=1, markerColor="m")
+    overlay_instrument(ax, dict(lat=40.00, lon=254.70 - 360, name="BC840"), to=to, mult=-.2, markerColor="m", markerSize=3)
+    overlay_instrument(ax, dict(lat=30.40, lon=262.30 - 360, name="AU930"), to=to, mult=-1, markerColor="m")
 
     # Totality path
     if fname:
@@ -268,4 +271,4 @@ if __name__ == "__main__":
     lons = n.linspace(-180,180,num=91*2)
     i = 10
     to = ccrs.Orthographic(-90, 50)
-    fetch_event(date, lats, lons, i, to, ["cvw", "cve", "fhw", "fhe"], "database/2017.csv")
+    fetch_event(date, lats, lons, i, to, [], "database/2017.csv")
