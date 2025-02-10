@@ -2,44 +2,21 @@
 from pynasonde.digisonde.digi_plots import SaoSummaryPlots
 from pynasonde.digisonde.edp import EdpExtractor
 from pynasonde.digisonde.sao import SaoExtractor
-from pynasonde.digisonde.digi_utils import get_digisonde_info
+
 
 import pandas as pd
 import numpy as np
 import datetime as dt
 import sys
 sys.path.append("review_response")
-from utils import create_eclipse_path_local, smooth
+from eutils import create_eclipse_path_local, smooth
+from rr_helper import (
+    calculate_GC_stats_model, estimate_GCparams,
+    lay_eclipse_occl
+)
 
-
-def estimate_GCparams(df, ylim, xlim, stn_code):
-    stn_info = get_digisonde_info(stn_code)
-    print(stn_info)
-    df = df[
-        (df.th>=ylim[0]) &
-        (df.th<=ylim[1]) &
-        (df.datetime>=xlim[0]) &
-        (df.datetime<=xlim[1]) 
-    ]
-    hmax = []
-    hmax_t = []
-    for x in df.datetime.unique():
-        o = df[df.datetime==x]
-        if len(o) > 0:
-            hmax.append(o.th.tolist()[o.ed.argmax()])
-            hmax_t.append(x)
-    
-    hmax_t = [
-        dt.datetime.utcfromtimestamp(
-            (x-np.datetime64('1970-01-01T00:00:00'))/np.timedelta64(1, 's')
-        ) 
-        for x in hmax_t
-    ]
-    p = create_eclipse_path_local(
-        hmax_t, 
-        stn_info["LAT"], stn_info["LONG"]
-    )
-    return dict(hmax=hmax, hmax_t=hmax_t, p=p)
+import matplotlib.ticker as mticker
+import matplotlib.dates as mdates
 
 def download_possible_datasets(stations):
     from pynasonde.webhook import Webhook
@@ -67,187 +44,102 @@ def download_possible_datasets(stations):
 
 def generate_digisonde_pfh_profiles(
     folders,
-    func_name,
     fig_file_name,
     fig_title="",
     draw_local_time=False,
-    stns=[],
 ):
-    dfs = [
-        SaoExtractor.load_SAO_files(
-            folders=[folder], func_name=func_name,
-            n_procs=12,
-        )
-        for folder in folders
-    ]
-    dfs_scaled = [
-        SaoExtractor.load_SAO_files(
-            folders=[folder], func_name="scaled",
-            n_procs=12,
-        )
-        for folder in folders
-    ]
-    N = len(folders)
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    mpl.rcParams.update({"xtick.labelsize": 12, "ytick.labelsize":12, "font.size":12})
+    plt.rc('text', usetex=False)
+    out = calculate_GC_stats_model(stn_code)
+    df = SaoExtractor.load_SAO_files(
+        folders=folders, func_name="height_profile",
+        n_procs=12,
+    )
+    df.ed = df.ed / 1e6
+    dfsc = SaoExtractor.load_SAO_files(
+        folders=folders, func_name="scaled",
+        n_procs=12,
+    )
     sao_plot = SaoSummaryPlots(
         font_size=12,
-        figsize=(6, 4 * N),
-        nrows=N,
+        figsize=(6, 4 * 2),
+        nrows=2,
         fig_title=fig_title,
         draw_local_time=draw_local_time,
     )
-    xlim = [dt.datetime(2017,8,21,15), dt.datetime(2017,8,21,21)]
+    xlim = [dt.datetime(2017,8,21,16), dt.datetime(2017,8,21,21)]
     ylim = [90, 300]
-    for i in range(N):
-        df = dfs[i]
-        dfsc = dfs_scaled[i]
-        df.ed = df.ed / 1e6
-        gcp = estimate_GCparams(df, ylim, xlim, stns[i])
-        ax, _ = sao_plot.add_TS(
-            df,
-            zparam="ed",
-            prange=[0, 0.5],
-            ylim=ylim,
-            zparam_lim=10,
-            xlim=xlim,
-            cbar_label=r"$N_e$,$\times 10^{6}$ /cc",
-            plot_type="scatter",
-            title="Stn Code: " + stns[i],
-            scatter_ms=300,
-            xlabel="Time, UT",  # if i == 2 else "",
-            cmap="Blues",
-        )
-        ax.plot(
-            dfsc.datetime, 
-            dfsc.hmF1,
-            "+", color="darkred", 
-            ls="None", ms="5", zorder=4
-        )
-        axc = ax.twinx()
-        axc.plot(
-            gcp["hmax_t"],
-            1-gcp["p"], ls="-", 
-            lw=0.8, color="k"
-        )
-        axc.set_yticks([])
-    sao_plot.save(fig_file_name)
-    sao_plot.close()
-    return
-
-
-def generate_digisonde_hNmf_profiles(
-    folders,
-    func_name,
-    fig_file_name,
-    fig_title="",
-    draw_local_time=False,
-    stns=[],
-):
-    dfs = [
-        SaoExtractor.load_SAO_files(folders=[folder], func_name=func_name)
-        for folder in folders
-    ]
-    N = len(folders)
-    sao_plot = SaoSummaryPlots(
-        font_size=12,
-        figsize=(6, 4 * N),
-        nrows=N,
-        fig_title=fig_title,
-        draw_local_time=draw_local_time,
+    gcp = estimate_GCparams(df, ylim, xlim, out["stn"])
+    ax, _ = sao_plot.add_TS(
+        df,
+        zparam="ed",
+        prange=[0, 0.3],
+        ylim=ylim,
+        zparam_lim=10,
+        xlim=xlim,
+        cbar_label=r"$N_e$,$\times 10^{6}$ /cc",
+        plot_type="scatter",
+        title=f"Stn Code: {out['stn']}",
+        scatter_ms=300,
+        xlabel="",  # if i == 2 else "",
+        cmap="Blues",
     )
-
-    for i in range(N):
-        df = dfs[i]
-        ax, _ = sao_plot.plot_TS(
-            df,
-            left_yparams=["foF1"],
-            left_ylim=[1, 15],
-            right_ylim=[80, 400],
-            right_yparams=["hmF1"],
-            title="Stn Code: " + stns[i],
-        )
-
-    sao_plot.save(fig_file_name)
-    sao_plot.close()
-    return
-
-
-def generate_digisonde_edp_profiles(
-    folders,
-    func_name,
-    fig_file_name,
-    fig_title="",
-    draw_local_time=False,
-    stns=[],
-):
-    dfs = [
-        EdpExtractor.load_EDP_files(folders=[folder], func_name=func_name)
-        for folder in folders
-    ]
-    N = len(folders)
-    sao_plot = SaoSummaryPlots(
-        font_size=12,
-        figsize=(6, 4 * N),
-        nrows=N,
-        fig_title=fig_title,
-        draw_local_time=draw_local_time,
+    ax.plot(
+        dfsc.datetime, 
+        dfsc.hmF1,
+        "+", color="darkred", 
+        ls="None", ms="5", zorder=4
     )
-
-    for i in range(N):
-        df = dfs[i]
-        print(df.density.min(),df.density.max())
-        df.density = df.density/1e12
-        ax, _ = sao_plot.add_TS(
-            df,
-            yparam="height",
-            zparam="density",
-            prange=[0, 0.5],
-            ylim=[90, 600],
-            zparam_lim=1e6,
-            cbar_label=r"$N_e$,$\times 10^{12}$ /cm",
-            plot_type="scatter",
-            title="Stn Code: " + stns[i],
-            scatter_ms=10,
-            xlabel="Time, UT",  # if i == 2 else "",
-        )
+    lay_eclipse_occl(ax.twinx(), gcp["hmax_t"], gcp["p"])
+    ax.xaxis.set_major_locator(mdates.HourLocator())
+    ax = sao_plot.get_axes(False)
+    ax.plot(
+        out["time"], out["f1"],
+        color="r", ls="-", lw=0.9,
+        label="$foF_1$"
+    )
+    ax.plot(
+        out["time"], out["f2"],
+        color="b", ls="-", lw=0.9,
+        label="$foF_2$"
+    )
+    lay_eclipse_occl(ax.twinx(), gcp["hmax_t"], gcp["p"])
+    ax.legend(loc=4)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter(r"%H"))
+    ax.xaxis.set_major_locator(mdates.HourLocator())
+    ax.set_xlim(xlim)
+    ax.set_ylim(2, 6)
+    txt = r"$\theta=%.1f^{\circ}$, $\phi=%.1f^{\circ}$"%(out["olat"], out["olon"])
+    txt += "\n"
+    txt += r" $\mathcal{O}=%.2f$, $\Delta T_{GC}$=%d min, $GC^p$=%.1f el/cc"%(out["o"], out["f_dif2_dur"], out["n_dif2_max"])
+    ax.set_xlabel("Time, UT")
+    ax.set_ylabel(r"$foF_{1,2}$, MHz")
+    ax.text(
+        0.05, 0.05, txt,
+        ha="left", va="bottom",
+        transform=ax.transAxes
+    )
     sao_plot.save(fig_file_name)
     sao_plot.close()
+    print(out["local_time"], out["dist"])
+    print(gcp["f_dif2_dur"], gcp["f_dif2_max"])
     return
 
 
 ######################################
 ## Download all dataset 2017
 ######################################
-# download_possible_datasets(["BC840", "AU930", "AL945", "WI937"])
+# download_possible_datasets(["BC840", "AU930", "AL945", "WI937", "EG931"])
 
 ## Analyzing the dataset form 2017 Eclipse
-stn_code = "WI937"
+stn_code = "EG931"
 folders = [
     f"/media/chakras4/Crucial X9/NOAA_Archives/profilers-sounders/ionosonde/mids09/{stn_code}/2017/233/scaled/",
 ]
-func_name = "height_profile"
 generate_digisonde_pfh_profiles(
     folders,
-    func_name,
     f"dataset/figures/2017_{stn_code.lower()}_pf.png",
     fig_title="Digisondes / 21 August, 2017",
-    stns=[stn_code],
 )
-
-# generate_digisonde_hNmf_profiles(
-#     folders,
-#     "scaled",
-#     f"dataset/figures/2017_{stn_code.lower()}_hNmf.png",
-#     fig_title="Digisondes / 21 August, 2017",
-#     stns=[stn_code],
-# )
-
-# drift_dataset = DvlExtractor.load_DVL_files(folders=[])
-
-
-# generate_digisonde_edp_profiles(
-#     folders,
-#     func_name,
-#     f"dataset/figures/2017_{stn_code.lower()}_edp.png",
-#     fig_title="Digisondes / 21 August, 2017",
-#     stns=[stn_code],
-# )

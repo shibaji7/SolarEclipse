@@ -19,7 +19,7 @@ def smooth(x,window_len=11,window="hanning"):
     return y
 
 def read_eclispe_path(year=2024):
-    fname = f"database/eclipse_path/{year}.csv"
+    fname = f"database/{year}.csv"
     LatC, LonC = [], []
     LatN, LonN = [], []
     LatS, LonS = [], []

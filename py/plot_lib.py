@@ -328,95 +328,95 @@ def compute_2D_TS(
 def create_master_plot(
     stn="lusk",
 ):
-    # from fetch import DiffWACCMX
+    from fetch import DiffWACCMX
 
-    # params = [
-    #     {
-    #         "name": "NOp",
-    #         "unit_multiplier": 1.0,
-    #         "unit": "cc",
-    #         "mol_to_cc": "T",
-    #         "interpolate": {"scale": "log", "type": "linear"},
-    #     },
-    #     {
-    #         "name": "O2p",
-    #         "unit_multiplier": 1.0,
-    #         "unit": "cc",
-    #         "mol_to_cc": "T",
-    #         "interpolate": {"scale": "log", "type": "linear"},
-    #     },
-    #     {
-    #         "name": "N2p",
-    #         "unit_multiplier": 1.0,
-    #         "unit": "cc",
-    #         "mol_to_cc": "T",
-    #         "interpolate": {"scale": "log", "type": "linear"},
-    #     },
-    #     {
-    #         "name": "e",
-    #         "unit_multiplier": 1.0,
-    #         "unit": "cc",
-    #         "mol_to_cc": "T",
-    #         "interpolate": {"scale": "log", "type": "linear"},
-    #     },
-    # ]
-    # dw = DiffWACCMX(
-    #     "dataset/29jan2022/ECL_1100_0100_all.nc",
-    #     "dataset/29jan2022/BGC_1100_0100_all.nc",
-    #     params=params,
-    #     stn=stn,
-    # )
-    # fig, axes = plt.subplots(dpi=240, figsize=(6, 2.5), nrows=1, ncols=2)
-    # axes = axes.ravel()
-    # compute_2D_TS_F1(axes[:2], dw, params, fig)
-    # fig.subplots_adjust(wspace=0.1, hspace=0.1)
-    # fig.savefig("dataset/figures/density_distribution.png", bbox_inches="tight")
-    # del dw
+    params = [
+        {
+            "name": "NOp",
+            "unit_multiplier": 1.0,
+            "unit": "cc",
+            "mol_to_cc": "T",
+            "interpolate": {"scale": "log", "type": "linear"},
+        },
+        {
+            "name": "O2p",
+            "unit_multiplier": 1.0,
+            "unit": "cc",
+            "mol_to_cc": "T",
+            "interpolate": {"scale": "log", "type": "linear"},
+        },
+        {
+            "name": "N2p",
+            "unit_multiplier": 1.0,
+            "unit": "cc",
+            "mol_to_cc": "T",
+            "interpolate": {"scale": "log", "type": "linear"},
+        },
+        {
+            "name": "e",
+            "unit_multiplier": 1.0,
+            "unit": "cc",
+            "mol_to_cc": "T",
+            "interpolate": {"scale": "log", "type": "linear"},
+        },
+    ]
+    dw = DiffWACCMX(
+        "dataset/29jan2022/ECL_1100_0100_all.nc",
+        "dataset/29jan2022/BGC_1100_0100_all.nc",
+        params=params,
+        stn=stn,
+    )
+    fig, axes = plt.subplots(dpi=240, figsize=(6, 2.5), nrows=1, ncols=2)
+    axes = axes.ravel()
+    compute_2D_TS_F1(axes[:2], dw, params, fig)
+    fig.subplots_adjust(wspace=0.1, hspace=0.1)
+    fig.savefig("dataset/figures/density_distribution.png", bbox_inches="tight")
+    del dw
 
-    # fig, axes = plt.subplots(dpi=200, figsize=(6, 8), nrows=3, ncols=2)
-    # axes = axes.ravel()
-    # params = [
-    #     {
-    #         "name": "Op_CHMP",
-    #         "unit_multiplier": 1.0,
-    #         "unit": "cc",
-    #         "interpolate": {"scale": "linear", "type": "linear"},
-    #     },
-    #     {
-    #         "name": "Op_CHML",
-    #         "unit_multiplier": 1.0,
-    #         "unit": "cc",
-    #         "interpolate": {"scale": "linear", "type": "linear"},
-    #     },
-    #     {
-    #         "name": "amb_diff",
-    #         "unit_multiplier": 1.0,
-    #         "unit": "cc",
-    #         "interpolate": {"scale": "linear", "type": "linear"},
-    #     },
-    #     {
-    #         "name": "dwind",
-    #         "unit_multiplier": 1.0,
-    #         "unit": "cc",
-    #         "interpolate": {"scale": "linear", "type": "linear"},
-    #     },
-    #     {
-    #         "name": "dfield",
-    #         "unit_multiplier": 1.0,
-    #         "unit": "cc",
-    #         "interpolate": {"scale": "linear", "type": "linear"},
-    #     },
-    # ]
-    # dw = DiffWACCMX(
-    #     "dataset/29jan2022/ECL_1100_0100_all.nc",
-    #     "dataset/29jan2022/BGC_1100_0100_all.nc",
-    #     params=params,
-    #     stn=stn,
-    # )
-    # compute_2D_TS(axes, dw, params, fig)
-    # fig.subplots_adjust(wspace=0.1, hspace=0.4)
-    # fig.savefig("dataset/figures/difference_distribution.png", bbox_inches="tight")
-    # del dw
+    fig, axes = plt.subplots(dpi=200, figsize=(6, 8), nrows=3, ncols=2)
+    axes = axes.ravel()
+    params = [
+        {
+            "name": "Op_CHMP",
+            "unit_multiplier": 1.0,
+            "unit": "cc",
+            "interpolate": {"scale": "linear", "type": "linear"},
+        },
+        {
+            "name": "Op_CHML",
+            "unit_multiplier": 1.0,
+            "unit": "cc",
+            "interpolate": {"scale": "linear", "type": "linear"},
+        },
+        {
+            "name": "amb_diff",
+            "unit_multiplier": 1.0,
+            "unit": "cc",
+            "interpolate": {"scale": "linear", "type": "linear"},
+        },
+        {
+            "name": "dwind",
+            "unit_multiplier": 1.0,
+            "unit": "cc",
+            "interpolate": {"scale": "linear", "type": "linear"},
+        },
+        {
+            "name": "dfield",
+            "unit_multiplier": 1.0,
+            "unit": "cc",
+            "interpolate": {"scale": "linear", "type": "linear"},
+        },
+    ]
+    dw = DiffWACCMX(
+        "dataset/29jan2022/ECL_1100_0100_all.nc",
+        "dataset/29jan2022/BGC_1100_0100_all.nc",
+        params=params,
+        stn=stn,
+    )
+    compute_2D_TS(axes, dw, params, fig)
+    fig.subplots_adjust(wspace=0.1, hspace=0.4)
+    fig.savefig("dataset/figures/difference_distribution.png", bbox_inches="tight")
+    del dw
 
     fig, axes = plt.subplots(dpi=200, figsize=(6, 2.5), nrows=1, ncols=2)
     axes = axes.ravel()

@@ -322,6 +322,10 @@ class FetchModel(object):
             "center": {"lat":41, "lon":-99},
             "lat_low": {"lat":41-7, "lon":-99},
             "lat_up": {"lat":41+8, "lon":-99},
+            "WI937": {"lat":37.94, "lon":284.42 - 360},
+            "BC840": {"lat":40.00, "lon":254.70 - 360},
+            "AU930": {"lat":30.40, "lon":262.30 - 360},
+            "EG931": {"lat":30.50, "lon":273.50 - 360},
         }
         return locations[stn]
 
