@@ -77,17 +77,27 @@ ax.text(0.05, 0.95, "(a)", transform=ax.transAxes, ha="left", va="center")
 center, lonx = 41, -99
 lat_low, lat_up = center-7, center+7
 lat_boulder, lon_boulder = 40.0150, -105.2705
-lat_lusk, lon_lusk = 40.0150, -105.2705
+lat_lusk, lon_lusk = 42.7625, -104.4522
 XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), 
                                           np.array([[lonx, lonx, lonx]]), 
                                           np.array([[center, lat_low, lat_up]]))
 X, Y = XYZ[:, :, 0], XYZ[:, :, 1]
 ax.scatter(X, Y, s=10, color="magenta", marker=".", fc="None", lw=0.3)
 
-XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), 
-                                          np.array([[lon_boulder, lon_lusk]]), 
-                                          np.array([[lat_boulder, lat_lusk]]))
-X, Y = XYZ[:, :, 0], XYZ[:, :, 1]
+
+XYZ = ccrs.PlateCarree().transform_points(
+    ccrs.Geodetic(), 
+    np.array([
+        lon_boulder, lon_lusk, -71.49, 
+        284.42 - 360, 254.70 - 360,
+        262.30 - 360, 273.50 - 360
+    ]), 
+    np.array([
+        lat_boulder, lat_lusk, 42.61,
+        37.94, 40.00, 30.40, 30.50
+    ])
+)
+X, Y = XYZ[:, 0], XYZ[:, 1]
 ax.scatter(X, Y, s=1, color="b", marker="D", fc="None", lw=0.3)
 
 fig.subplots_adjust(wspace=0.5, hspace=0.3)
