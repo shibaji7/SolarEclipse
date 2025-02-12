@@ -227,8 +227,8 @@ params = [
 ]
 
 ts_pl, ts_dm = [], []
-
-for stn, c in zip(stns, ["darkred", "darkblue", "darkgreen"]):
+multiplers = [3, 1, 1]
+for m, stn, c in zip(multiplers, stns, ["darkred", "darkblue", "darkgreen"]):
     dw = DiffWACCMX(
         "dataset/29jan2022/ECL_1100_0100_all.nc",
         "dataset/29jan2022/BGC_1100_0100_all.nc",
@@ -250,10 +250,12 @@ for stn, c in zip(stns, ["darkred", "darkblue", "darkgreen"]):
     ts_pl.append(dct["Op_CHMP_"+h].d_dif-dct["Op_CHML_"+h].d_dif)
     axes[1].plot(
         dct["amb_diff_"+h].time, 
-        dct["amb_diff_"+h].d_dif+dct["dwind_"+h].d_dif+dct["dfield_"+h].d_dif, 
+        m*(dct["amb_diff_"+h].d_dif+dct["dwind_"+h].d_dif+dct["dfield_"+h].d_dif), 
         color=c, ls="-", lw=0.8,
     )
-    ts_dm.append(dct["amb_diff_"+h].d_dif+dct["dwind_"+h].d_dif+dct["dfield_"+h].d_dif)
+    ts_dm.append(
+        m*(dct["amb_diff_"+h].d_dif+dct["dwind_"+h].d_dif+dct["dfield_"+h].d_dif)
+    )
     del dw, dct
 axes[0].legend(loc=1)
 
