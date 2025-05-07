@@ -16,6 +16,7 @@ import matplotlib.dates as mdates
 import aacgmv2
 
 import netCDF4 as nc
+
 center, lonx = 41, -99
 lat_low, lat_up = center-7, center+7
 
@@ -25,6 +26,9 @@ plt.rcParams["font.sans-serif"] = ["Tahoma", "DejaVu Sans",
                                    "Lucida Grande", "Verdana"]
 import matplotlib as mpl
 mpl.rcParams.update({"xtick.labelsize": 15, "ytick.labelsize":15, "font.size":15})
+plt.rcParams.update({
+    "text.usetex": False,
+})
 
 def fetch_occl_data(d=dt.datetime(2017,8,21,18)):
     folder = "dataset/Mark/euv/%s_%dkm_171_1.nc"
@@ -145,7 +149,7 @@ im = ax.contourf(
 )
 cax = ax.inset_axes([1.05, 0.1, 0.05, 0.8], transform=ax.transAxes)
 cb = fig.colorbar(im, ax=ax, cax=cax)
-cb.set_label(r"Occultation, $\mathcal{O}$")
+cb.set_label(r"Obscuration, $\mathcal{O}$")
 ax.text(0.05, 0.95, "(a)", transform=ax.transAxes, ha="left", va="center")
 
 XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), 
@@ -163,7 +167,7 @@ ax.set_ylabel(
 )
 a = of[np.argmin(np.abs(lat-center)), np.argmin(np.abs(lon-lonx))]
 olat, olon, _ = aacgmv2.get_aacgm_coord(center, lonx, 300, dt.datetime(2017,8,21,18))
-ax.text(0.95, 0.98, r"$\theta=%d^{\circ},\phi=%d^{\circ}$"%(olat,olon)+\
+ax.text(0.95, 0.98, r"$\theta_m=%d^{\circ},\phi_m=%d^{\circ}$"%(olat,olon)+\
         "\n"+r"$\mathcal{O}=%.2f,\Delta T_{GC}=%d min, GC^p=%.1f$"%(a,f_dif0_dur,f_dif0_max)+" el/cc", 
         transform=ax.transAxes, ha="right", va="top", fontdict={"size":10})
 ax.plot(ttime0, f0_150/1e6, "ro", ms=0.4, ls="None")
@@ -186,7 +190,7 @@ a = of[np.argmin(np.abs(lat-lat_low)), np.argmin(np.abs(lon-lonx))]
 ax.set_xlim(dt.datetime(2017,8,21,16),dt.datetime(2017,8,21,22))
 olat, olon, _ = aacgmv2.get_aacgm_coord(lat_low, lonx, 300, dt.datetime(2017,8,21,18))
 ax.text(0.95, 0.98, 
-        r"$\theta=%d^{\circ},\phi=%d^{\circ}$"%(olat,olon)+\
+        r"$\theta_m=%d^{\circ},\phi_m=%d^{\circ}$"%(olat,olon)+\
         "\n"+r"$\mathcal{O}=%.2f,\Delta T_{GC}=%d min, GC^p=%.1f$"%(a,f_dif1_dur,f_dif1_max)+" el/cc", 
         transform=ax.transAxes, ha="right", va="top", fontdict={"size":10})
 
@@ -204,7 +208,7 @@ ax.plot(ttime2, f2_240/1e6, "bs", ms=0.4, ls="None")
 ax.set_ylim(2,7)
 ax.set_xlim(dt.datetime(2017,8,21,16),dt.datetime(2017,8,21,22))
 olat, olon, _ = aacgmv2.get_aacgm_coord(lat_up, lonx, 300, dt.datetime(2017,8,21,18))
-ax.text(0.95, 0.98, r"$\theta=%d^{\circ},\phi=%d^{\circ}$"%(olat,olon)+\
+ax.text(0.95, 0.98, r"$\theta_m=%d^{\circ},\phi_m=%d^{\circ}$"%(olat,olon)+\
         "\n"+r"$\mathcal{O}=%.2f,\Delta T_{GC}=%d min, GC^p=%.1f$"%(a,f_dif2_dur,f_dif2_max)+" el/cc", 
         transform=ax.transAxes, ha="right", va="top", fontdict={"size":10})
 
