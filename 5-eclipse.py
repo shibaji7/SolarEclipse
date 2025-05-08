@@ -66,7 +66,7 @@ def draw_images(lats, lons, date, p, I, i=0, to=ccrs.Orthographic(-90, -90), cb=
     gl.yformatter = LATITUDE_FORMATTER
     return ax, fig
 
-def _add_colorbar(fig, ax, im, colormap="gray_r", label=r"Occultation, ($\alpha$)"):
+def _add_colorbar(fig, ax, im, colormap="gray_r", label=r"Obscuration, ($\mathcal{O}$)"):
         """Add a colorbar to the right of an axis."""
         pos = ax.get_position()
         cpos = [

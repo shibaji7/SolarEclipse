@@ -167,7 +167,7 @@ ax.set_ylabel(
 )
 a = of[np.argmin(np.abs(lat-center)), np.argmin(np.abs(lon-lonx))]
 olat, olon, _ = aacgmv2.get_aacgm_coord(center, lonx, 300, dt.datetime(2017,8,21,18))
-ax.text(0.95, 0.98, r"$\theta_m=%d^{\circ},\phi_m=%d^{\circ}$"%(olat,olon)+\
+ax.text(0.95, 0.98, r"$\theta=%d^{\circ},\phi=%d^{\circ}$"%(center,lonx)+\
         "\n"+r"$\mathcal{O}=%.2f,\Delta T_{GC}=%d min, GC^p=%.1f$"%(a,f_dif0_dur,f_dif0_max)+" el/cc", 
         transform=ax.transAxes, ha="right", va="top", fontdict={"size":10})
 ax.plot(ttime0, f0_150/1e6, "ro", ms=0.4, ls="None")
@@ -190,7 +190,7 @@ a = of[np.argmin(np.abs(lat-lat_low)), np.argmin(np.abs(lon-lonx))]
 ax.set_xlim(dt.datetime(2017,8,21,16),dt.datetime(2017,8,21,22))
 olat, olon, _ = aacgmv2.get_aacgm_coord(lat_low, lonx, 300, dt.datetime(2017,8,21,18))
 ax.text(0.95, 0.98, 
-        r"$\theta_m=%d^{\circ},\phi_m=%d^{\circ}$"%(olat,olon)+\
+        r"$\theta=%d^{\circ},\phi=%d^{\circ}$"%(lat_low,lonx)+\
         "\n"+r"$\mathcal{O}=%.2f,\Delta T_{GC}=%d min, GC^p=%.1f$"%(a,f_dif1_dur,f_dif1_max)+" el/cc", 
         transform=ax.transAxes, ha="right", va="top", fontdict={"size":10})
 
@@ -208,7 +208,7 @@ ax.plot(ttime2, f2_240/1e6, "bs", ms=0.4, ls="None")
 ax.set_ylim(2,7)
 ax.set_xlim(dt.datetime(2017,8,21,16),dt.datetime(2017,8,21,22))
 olat, olon, _ = aacgmv2.get_aacgm_coord(lat_up, lonx, 300, dt.datetime(2017,8,21,18))
-ax.text(0.95, 0.98, r"$\theta_m=%d^{\circ},\phi_m=%d^{\circ}$"%(olat,olon)+\
+ax.text(0.95, 0.98, r"$\theta=%d^{\circ},\phi=%d^{\circ}$"%(lat_up,lonx)+\
         "\n"+r"$\mathcal{O}=%.2f,\Delta T_{GC}=%d min, GC^p=%.1f$"%(a,f_dif2_dur,f_dif2_max)+" el/cc", 
         transform=ax.transAxes, ha="right", va="top", fontdict={"size":10})
 
