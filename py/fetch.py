@@ -490,7 +490,7 @@ class DiffWACCMX(object):
         self.h_interpolate = h_interpolate
         self.Hs = Hs
         self.eclipse = FetchModel(eclipse_file, copy.copy(params), event)
-        self.bgc = FetchModel(bgc_file, copy.copy(params), event)
+        # self.bgc = FetchModel(bgc_file, copy.copy(params), event)
         self.run_extractions()
         return
 
@@ -504,9 +504,9 @@ class DiffWACCMX(object):
             self.eclipse.run_height_interpolate(
                 self.stn, self.loc, self.t_start, self.t_end
             )
-            self.bgc.run_height_interpolate(
-                self.stn, self.loc, self.t_start, self.t_end
-            )
+            # self.bgc.run_height_interpolate(
+            #     self.stn, self.loc, self.t_start, self.t_end
+            # )
         return
 
     def fetch_data(self, kind="TS", hs=[150, 240]):

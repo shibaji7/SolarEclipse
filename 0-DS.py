@@ -7,8 +7,9 @@ import datetime as dt
 import sys
 sys.path.append("py/")
 from fetch import *
-import mplstyle
-
+# import mplstyle
+import scienceplots
+plt.style.use(["science", "ieee"])
 import matplotlib.pyplot as plt
 plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["font.sans-serif"] = ["Tahoma", "DejaVu Sans",
@@ -36,7 +37,7 @@ ls_ds_150 = Dataset("database/EOFs/42.75lat_-104.455lon_20170821160000_201708211
 digi = FetchDigisonde("dataset/Mabie/lusk.sav")
 of150x = FetchOccult([dt.datetime(2017,8,21,16), 42], 150)
 of240x = FetchOccult([dt.datetime(2017,8,21,16), 42], 240)
-print(digi.data)
+print(digi)
 
 digi_co = FetchDigisonde("dataset/Mabie/boulder.sav")
 digi_co.data.head()
@@ -99,7 +100,9 @@ def get_gridded_parameters(q, xparam="DATE", yparam="GDALT", zparam="NE", r=0, r
         plotParamDF[xparam] = plotParamDF[xparam].tolist()
         plotParamDF[yparam] = plotParamDF[yparam].tolist()
     plotParamDF = plotParamDF.groupby( [xparam, yparam] ).mean().reset_index()
-    plotParamDF = plotParamDF[ [xparam, yparam, zparam] ].pivot( xparam, yparam )
+    plotParamDF = plotParamDF[ [xparam, yparam, zparam] ].pivot( 
+        index=xparam, columns=yparam
+    )
     x = plotParamDF.index.values
     y = plotParamDF.columns.levels[1].values
     X, Y  = np.meshgrid( x, y )
@@ -182,6 +185,9 @@ ax.plot([dt.datetime(2017,8,21,16) + dt.timedelta(minutes=int(i))
 ax.plot([dt.datetime(2017,8,21,16) + dt.timedelta(minutes=int(i))
          for i in ls_ds_240.variables["time"][:].tolist()[::5]], co_ds_240.variables["171"][:].tolist()[::5], 
         color="darkblue", marker="+", ms=4, ls="None", alpha=0.6)
+ax.set_ylim(0, 1.2)
+ax.set_yticks([0, 0.5, 1.0])
+ax.set_yticklabels([1, 0.5, 0])
 ax.axvline(dt.datetime(2017,8,21,16,15), ls="--", lw=0.5, color="k")
 ax.axvline(dt.datetime(2017,8,21,17,45), ls="--", lw=0.5, color="k")
 ax.axvline(dt.datetime(2017,8,21,19,15), ls="--", lw=0.5, color="k")
@@ -247,7 +253,6 @@ ax = ax.twinx()
 ax.xaxis.set_major_locator(mdates.HourLocator(byhour=range(0,24,1)))
 ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute=range(0,60,5)))
 ax.xaxis.set_major_formatter(mdates.DateFormatter(r"$%H^{%M}$"))
-ax.set_ylim(0, 1.2)
 ax.set_ylabel("Obscuration")
 ax.plot([dt.datetime(2017,8,21,16) + dt.timedelta(minutes=int(i))
          for i in co_ds_150.variables["time"][:].tolist()[::5]], co_ds_150.variables["171"][:].tolist()[::5], 
@@ -255,9 +260,12 @@ ax.plot([dt.datetime(2017,8,21,16) + dt.timedelta(minutes=int(i))
 ax.plot([dt.datetime(2017,8,21,16) + dt.timedelta(minutes=int(i))
          for i in co_ds_240.variables["time"][:].tolist()[::5]], co_ds_240.variables["171"][:].tolist()[::5], 
         color="darkblue", marker="+", ms=4, ls="None", alpha=0.6)
+ax.set_ylim(0, 1.2)
+ax.set_yticks([0, 0.5, 1.0])
+ax.set_yticklabels([1, 0.5, 0])
 
 fig.subplots_adjust(wspace=0.3,hspace=0.3)
-fig.savefig("dataset/figures/intro_to_gc.png", bbox_inches="tight")
+fig.savefig("dataset/figures/Figure03.png", bbox_inches="tight")
 plt.close()
 
 
@@ -321,5 +329,5 @@ ax.text(0.95, 0.98, r"$\Delta T_{GC}=%d min, GC^p=%.1f /cc$"%(f_dif_dur,f_dif_ma
         transform=ax.transAxes, ha="right", va="top", fontdict={"size":8})
 _ = ax.axvspan(dt.datetime(2017,8,21,18,15), dt.datetime(2017,8,21,19,5), alpha=0.1)
 fig.subplots_adjust(wspace=0.3,hspace=0.3)
-fig.savefig("dataset/figures/data_model_comparison.png", bbox_inches="tight")
+fig.savefig("dataset/figures/Figure04.png", bbox_inches="tight")
 plt.close()

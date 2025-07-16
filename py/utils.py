@@ -17,10 +17,16 @@ import pickle
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import array
+from numpy import array
 from scipy.interpolate import interp1d
 
-import mplstyle
+# import mplstyle
+import scienceplots
+plt.style.use(["science", "ieee"])
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Tahoma", "DejaVu Sans", "Lucida Grande", "Verdana"]
+plt.rcParams["text.usetex"] = True
+
 
 
 def smooth(x, window_len=51, window="hanning"):

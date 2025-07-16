@@ -3,7 +3,14 @@ import matplotlib.pyplot as plt
 import datetime as dt
 import sys
 sys.path.append("py/")
-import mplstyle
+# import mplstyle
+
+import scienceplots
+plt.style.use(["science", "ieee"])
+import matplotlib.pyplot as plt
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Tahoma", "DejaVu Sans",
+                                   "Lucida Grande", "Verdana"]
 from fetch import *
 import utils
 import cartopy.crs as ccrs
@@ -129,8 +136,8 @@ plt_lons = np.arange(-180, 181, 30)
 mark_lons = np.arange(-180, 180, 30)
 plt_lats = np.arange(20, 90, 15)
 gl = ax.gridlines(ccrs.PlateCarree(), linewidth=0.5, draw_labels=True,)
-gl.xlabels_top = False
-gl.ylabels_right = False
+# gl.xlabels_top = False
+# gl.ylabels_right = False
 gl.xlocator = mticker.FixedLocator(plt_lons)
 gl.ylocator = mticker.FixedLocator(plt_lats)
 gl.xformatter = LONGITUDE_FORMATTER
@@ -138,12 +145,14 @@ gl.yformatter = LATITUDE_FORMATTER
 gl.n_steps = 90
 gl.ylabel_style = {'size':10, 'color': 'b'}
 gl.xlabel_style = {"size":10, 'color': 'b',}
+gl.top_labels = False
+gl.right_labels = False
 
 XYZ = ccrs.PlateCarree().transform_points(ccrs.Geodetic(), glon, glat)
 X, Y = XYZ[:, :, 0], XYZ[:, :, 1]
 
 im = ax.contourf(
-    X, Y, of.T, transform=ccrs.PlateCarree(), cmap="gray", alpha=0.5,
+    X, Y, 1-of.T, transform=ccrs.PlateCarree(), cmap="gray_r", alpha=0.5,
     levels=[0,.2,.4,.6,.8,1.],
     vmin=0, vmax=1, **kwargs
 )
@@ -213,4 +222,4 @@ ax.text(0.95, 0.98, r"$\theta=%d^{\circ},\phi=%d^{\circ}$"%(lat_up,lonx)+\
         transform=ax.transAxes, ha="right", va="top", fontdict={"size":10})
 
 fig.subplots_adjust(wspace=0.5, hspace=0.3)
-fig.savefig("dataset/figures/latitude_distribution.png", bbox_inches="tight")
+fig.savefig("dataset/figures/Figure09.png", bbox_inches="tight")
